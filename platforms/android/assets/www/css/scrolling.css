@@ -1,0 +1,85 @@
+/* Empty. Add your own CSS if you like */
+
+.ionic-scroll.scroll-content {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    overflow: hidden;
+    margin-top: -1px;
+    padding-top: 1px;
+    width: auto;
+    height: auto;
+}
+
+.ionic-scroll .scroll {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-text-size-adjust: none;
+    -moz-text-size-adjust: none;
+    text-size-adjust: none;
+    -webkit-transform-origin: left top;
+    transform-origin: left top;
+}
+
+.ionic-scroll .scroll-bar-v {
+    top: 2px;
+    right: 3px;
+    bottom: 2px;
+    width: 3px;
+}
+
+.ionic-scroll .scroll-bar {
+    position: absolute;
+    z-index: 9999;
+}
+
+.ionic-scroll .list:last-child {
+    margin-bottom: 0px;
+}
+.ionic-scroll .list {
+    position: relative;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    padding-left: 0;
+    margin-bottom: 20px;
+}
+
+.ionic-scroll .item, .ionic-scroll .item h1, .ionic-scroll .item h2, .ionic-scroll .item h3, .ionic-scroll .item h4, .ionic-scroll .item h5, .ionic-scroll .item h6, .ionic-scroll .item p, .ionic-scroll .item-content, .ionic-scroll .item-content h1, .ionic-scroll .item-content h2, .ionic-scroll .item-content h3, .ionic-scroll .item-content h4, .ionic-scroll .item-content h5, .ionic-scroll .item-content h6, .ionic-scroll .item-content p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ionic-scroll .item {
+    border-color: #ddd;
+    background-color: #fff;
+    color: #444;
+    position: relative;
+    z-index: 2;
+    display: block;
+    margin: -1px;
+    padding: 16px;
+    border-width: 1px;
+    border-style: solid;
+    font-size: 16px;
+}
+
+.ionic-scroll .scroll-bar-indicator.scroll-bar-fade-out {
+    opacity: 0;
+}
+.ionic-scroll .scroll-bar-v .scroll-bar-indicator {
+    width: 100%;
+}
+.ionic-scroll .scroll-bar-indicator {
+    position: absolute;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    opacity: 1;
+    -webkit-transition: opacity 0.3s linear;
+    transition: opacity 0.3s linear;
+}
