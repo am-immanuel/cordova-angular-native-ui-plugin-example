@@ -4,9 +4,11 @@
 // 'starter' is the name of this angular module example (also set in a <body> attribute in index.html)
 // the 2nd parameter is an array of 'requires'
 // 'starter.controllers' is found in controllers.js
-angular.module('starter', ['ionic', 'starter.controllers', 'pasvaz.bindonce'])
+var exported = {};
+angular.module('starter', ['ionic', 'starter.controllers'])
 
-.run(function($ionicPlatform) {
+.run(function($ionicPlatform, $rootScope, $state) {
+  exported.$state = $state;
   $ionicPlatform.ready(function() {
     // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
     // for form inputs)
@@ -30,6 +32,24 @@ angular.module('starter', ['ionic', 'starter.controllers', 'pasvaz.bindonce'])
     controller: 'AppCtrl'
   })
 
+      .state('app.activity1', {
+          url: "/activity1",
+          views: {
+              'menuContent': {
+                  templateUrl: "templates/activity1.html",
+                  controller: 'Activity1Ctrl'
+              }
+          }
+      })
+      .state('app.activity2', {
+          url: "/activity2",
+          views: {
+              'menuContent': {
+                  templateUrl: "templates/activity2.html",
+                  controller: 'Activity2Ctrl'
+              }
+          }
+      })
   .state('app.search', {
     url: "/search",
     views: {
@@ -67,5 +87,5 @@ angular.module('starter', ['ionic', 'starter.controllers', 'pasvaz.bindonce'])
     }
   });
   // if none of the above states are matched, use this as the fallback
-  $urlRouterProvider.otherwise('/app/playlists');
+  $urlRouterProvider.otherwise('/app/activity1');
 });

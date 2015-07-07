@@ -8,6 +8,9 @@
     <feature name="Device">
         <param name="android-package" value="org.apache.cordova.device.Device" />
     </feature>
+    <feature name="native-ui-plugin">
+        <param name="android-package" value="de.apparentmedia.cordova.NativeUIPlugin" />
+    </feature>
     <name>ionic-app</name>
     <description>
         An Ionic Framework and Cordova project.

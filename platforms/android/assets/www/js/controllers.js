@@ -49,4 +49,19 @@ angular.module('starter.controllers', [])
 })
 
 .controller('PlaylistCtrl', function($scope, $stateParams) {
-});
+})
+
+    .controller('Activity1Ctrl', function($scope, $stateParams, $state) {
+        $scope.input = {};
+        $scope.updateTextField = function() {
+            $scope.output = $scope.input.text;
+        }
+        $scope.gotoActivity2 = function() {
+            $state.go('app.activity2');
+        }
+    })
+    .controller('Activity2Ctrl', function($scope, $stateParams, $state  ) {
+        $scope.gotoActivity1 = function() {
+            $state.go('app.activity1');
+        }
+    });

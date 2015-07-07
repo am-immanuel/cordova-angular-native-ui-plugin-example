@@ -1,0 +1,22 @@
+<ion-view view-title="Activity 1">
+  <ion-content>
+    <h1>Activity 1</h1>
+          <form ng-submit="updateTextField()">
+          <div class="list">
+              <label class="item item-input">
+                  <span class="input-label">Input</span>
+                  <input type="text" ng-model="input.text">
+              </label>
+              <label class="item">
+                  <span class="input-label">Output</span><span ng-bind="output"></span>
+              </label>
+              <label class="item">
+                  <button id="button1" class="button button-block button-positive" type="submit">Update data</button>
+              </label>
+              <label class="item">
+                  <button id="gotoActivity2Button" class="button button-block button-positive" type="submit" ng-click="gotoActivity2()">Go to activity 2</button>
+              </label>
+          </div>
+      </form>
+  </ion-content>
+</ion-view>
