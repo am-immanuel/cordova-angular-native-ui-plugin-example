@@ -1,0 +1,8 @@
+{
+    "de.apparentmedia.cordova.native_ui_plugin": {
+        "source": {
+            "type": "local",
+            "path": "../native-ui-plugin"
+        }
+    }
+}
