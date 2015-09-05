@@ -4,3 +4,4 @@
 node_modules/
 plugins/
 ant-build
+.idea
