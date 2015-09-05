@@ -20,14 +20,16 @@ import com.ionicframework.ionicapp395632.Activity2;
 public class NativeUIPlugin extends CordovaPlugin {
 	public static String TAG = "NativeUIPlugin";
 	private static NativeUIPlugin INSTANCE;
-	private CallbackContext permanentCallback;
-	private Context context;
+	protected CallbackContext permanentCallback;
+	protected Context context;
+	protected Scope rootScope;
 	
 	@Override
 	public void initialize(CordovaInterface cordova, CordovaWebView webView) {
 		super.initialize(cordova, webView);
 		context = cordova.getActivity();
 		INSTANCE = this;
+		rootScope = new Scope(this);
 	}
 	
 	@Override
@@ -38,7 +40,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 			PluginResult pluginResult = new PluginResult(Status.OK);
 			pluginResult.setKeepCallback(true);
 			callbackContext.sendPluginResult(pluginResult);
-		} else if ("stateChangeStart".equals("action")) {
+		} else if ("stateChangeStart".equals(action)) {
 			JSONObject toState = args.getJSONObject(0);
 			JSONObject toParams = args.getJSONObject(1);
 			JSONObject fromState = args.getJSONObject(2);
@@ -56,25 +58,41 @@ public class NativeUIPlugin extends CordovaPlugin {
 		return true;
 	}
 	
-	public static void evaluateScopeExpression(String elementId, String expression) {
-		if (INSTANCE == null) {
-			Log.e(TAG, "NativeUIPlugin wasn't initialized yet");
-			return;
-		}
-		if (INSTANCE.permanentCallback == null) {
-			Log.e(TAG, "Permanent callback hasn't been registered yet");
-			return;
-		}
-		
+	protected void evaluateScopeExpression(String elementId, String expression) {
 		JSONObject message = new JSONObject();
 		try {
 			message.put("elementId", elementId);
 			message.put("expression", expression);
 			PluginResult result = new PluginResult(Status.OK, message);
 			result.setKeepCallback(true);
-			INSTANCE.permanentCallback.sendPluginResult(result);
+			getInstance().permanentCallback.sendPluginResult(result);
 		} catch (JSONException e) {
 			throw new RuntimeException("Could not construct JSON message", e);
 		}
+	}
+	
+	/**
+	 * @return The AngularJS root scope.
+	 */
+	public Scope getRootScope() {
+		return rootScope;
+	}
+	
+	public Scope getScopeByDomElementId(String domElementId) {
+		return new Scope(rootScope, domElementId);
+	}
+	
+	public static NativeUIPlugin getInstance() {
+		if (INSTANCE == null) {
+			String msg = "NativeUIPlugin wasn't initialized yet";
+			Log.e(TAG, msg);
+			throw new IllegalStateException(msg);
+		}
+		if (INSTANCE.permanentCallback == null) {
+			String msg = "NativeUIPlugin: Permanent callback hasn't been registered yet";
+			Log.e(TAG, msg);
+			throw new IllegalStateException(msg);
+		}
+		return INSTANCE;
 	}
 }
