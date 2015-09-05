@@ -31,7 +31,7 @@
         android:id="@+id/gotoActivity2Button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        <!--android:onClick="gotoActivity2"-->
+        android:onClick="gotoActivity2"
         android:text="Go to activity 2"
           />
 

@@ -59,6 +59,9 @@ angular.module('starter.controllers', [])
         $scope.gotoActivity2 = function() {
             $state.go('app.activity2');
         }
+        $scope.$watch('input.text', function(newValue, oldValue) {
+            console.log("input changed: " + newValue);
+        });
     })
     .controller('Activity2Ctrl', function($scope, $stateParams, $state  ) {
         $scope.gotoActivity1 = function() {
