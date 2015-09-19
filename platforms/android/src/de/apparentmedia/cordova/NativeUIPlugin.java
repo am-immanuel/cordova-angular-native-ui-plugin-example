@@ -18,7 +18,9 @@ import org.json.JSONObject;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler.Callback;
+import android.os.Message;
 import android.util.Log;
+import android.util.SparseArray;
 
 import com.ionicframework.ionicapp395632.Activity1;
 import com.ionicframework.ionicapp395632.Activity2;
@@ -29,8 +31,10 @@ public class NativeUIPlugin extends CordovaPlugin {
 	protected CallbackContext permanentCallback;
 	protected Context context;
 	protected Scope $rootScope;
-	protected Map<Integer, Scope> scopeMap = new HashMap<Integer, Scope>();
-	protected Map<String, Scope> nativeId2ScopeMap = new HashMap<String, Scope>();
+	private SparseArray<Scope> scopeMap = new SparseArray<Scope>();
+	private SparseArray<Callback> callbackMap = new SparseArray<Callback>();
+	private Map<String, Scope> nativeId2ScopeMap = new HashMap<String, Scope>();
+	private static Map<String, InitCallback> initCallbacksMap = new HashMap<String, InitCallback>();
 	
 	public NativeUIPlugin() {
 		$rootScope = new Scope(this);
@@ -67,6 +71,16 @@ public class NativeUIPlugin extends CordovaPlugin {
 			} else if ("app.activity1".equals(toState.getString("name"))) {
 				context.startActivity(new Intent(context, Activity1.class));
 			}
+		} else if ("invokeCallback".equals(action)) {
+			int callbackHashCode = args.getInt(0);
+			Callback callback = callbackMap.get(callbackHashCode);
+			if (callback == null) {
+				Log.e(TAG, "Could not find callback with hash " + callbackHashCode);
+			} else {
+				Message m = new Message();
+				m.obj = args.get(1);
+				callback.handleMessage(m);
+			}
 		} else {
 			Log.i(TAG, "action: " + action);
 			callbackContext.success();
@@ -74,11 +88,101 @@ public class NativeUIPlugin extends CordovaPlugin {
 		return true;
 	}
 	
-	public void evaluateScopeExpression(String nativeId, String expression) {
-		Scope scope = nativeId2ScopeMap.get(nativeId);
-		if (scope == null) {
-			Log.e(TAG, "native ID " + nativeId + " is not yet registered!");
+	private void clickInternal(int viewId) {
+		clickInternal(getScopeByViewId(viewId));
+	}
+
+	private void bindInternal(int viewId, Callback callback) {
+		Scope scope = getScopeByViewId(viewId);
+		String expression = getElementAttribute(scope, "Bind", "Model");
+		if (expression != null) {
+			invokePermanentCallback("$watch", scope.$id, expression, callback);
+		}
+	}
+
+	private void initInternal(Context context, int viewId, InitCallback callback) {
+		if (this.context == null) {
+			this.context = context;
+		}
+		Scope scope = getScopeByViewId(viewId);
+		if (scope != null) {
+			callback.init(viewId, scope);
 		} else {
+			String nativeId = context.getResources().getResourceEntryName(viewId);
+			initCallbacksMap.put(nativeId, callback);
+		}
+	}
+
+	public Scope getScopeByViewId(int viewId) {
+		if (context == null) {
+			return null;
+		}
+		return getScopeByNativeId(context.getResources().getResourceEntryName(viewId));
+	}
+	
+	private void clickInternal(Scope scope) {
+		String clickExpression = getElementAttribute(scope, "Click");
+		if (clickExpression != null) {
+			evaluateScopeExpression(scope.$id, clickExpression);
+		}
+	}
+	
+	private String getElementAttribute(Scope scope, String ngPostfix) {
+		return getElementAttribute(scope, ngPostfix, null);
+	}
+	
+	private String getElementAttribute(Scope scope, String ngPostfix, String ngPostfix2) {
+		if (scope != null) {
+			String expression = scope.getElementAttributes().get("ng" + ngPostfix);
+			if (expression != null) {
+				return expression;
+			}
+			expression = scope.getElementAttributes().get("dataNg" + ngPostfix);
+			if (expression != null) {
+				return expression;
+			}
+			if (ngPostfix2 == null) {
+				return null;
+			}
+			expression = scope.getElementAttributes().get("ng" + ngPostfix2);
+			if (expression != null) {
+				return expression;
+			}
+			expression = scope.getElementAttributes().get("dataNg" + ngPostfix2);
+			if (expression != null) {
+				return expression;
+			}
+		}
+		return null;
+	}
+	
+	public static void click(int viewId) {
+		getInstance().clickInternal(viewId);
+	}
+	
+	public static void bind(int viewId, Callback callback) {
+		getInstance().bindInternal(viewId, callback);
+	}
+	
+	public static void init(Context context, int viewId, InitCallback callback) {
+		getInstance().initInternal(context, viewId, callback);
+	}
+
+	public static void set(int viewId, Object value) {
+		getInstance().setInternal(viewId, value);
+	}
+	
+	private void setInternal(int viewId, Object value) {
+		Scope scope = getScopeByViewId(viewId);
+		String modelExpression = getElementAttribute(scope, "Model");
+		if (modelExpression != null) {
+			evaluateScopeExpression(scope.$id, modelExpression + "='" + value.toString().replaceAll("'", "\\'") + "'");
+		}
+	}
+
+	public void evaluateScopeExpression(String nativeId, String expression) {
+		Scope scope = getScopeByNativeId(nativeId);
+		if (scope != null) {
 			evaluateScopeExpression(scope.$id, expression);
 		}
 	}
@@ -93,7 +197,13 @@ public class NativeUIPlugin extends CordovaPlugin {
 		try {
 			message.put("action", action);
 			for (Object arg : args) {
-				jsonArgs.put(arg);
+				if (arg instanceof Callback) {
+					int hashCode = arg.hashCode();
+					jsonArgs.put(hashCode);
+					callbackMap.put(hashCode, (Callback) arg);
+				} else {
+					jsonArgs.put(arg);
+				}
 			}
 			message.put("args", jsonArgs);
 			PluginResult result = new PluginResult(Status.OK, message);
@@ -111,8 +221,12 @@ public class NativeUIPlugin extends CordovaPlugin {
 		return $rootScope;
 	}
 	
-	public Scope getScopeByNativeId(String scopeId) {
-		return nativeId2ScopeMap.get(scopeId);
+	protected Scope getScopeByNativeId(String nativeId) {
+		Scope result = nativeId2ScopeMap.get(nativeId);
+		if (result == null) {
+			Log.e(TAG, "native ID " + nativeId + " is not yet registered!");
+		}
+		return result;
 	}
 	
 	public static NativeUIPlugin getInstance() {
@@ -128,9 +242,9 @@ public class NativeUIPlugin extends CordovaPlugin {
 		return INSTANCE;
 	}
 
-	public void invokeScopeMethod(int scopeId, String string,
-			String eventName, Callback callback) {
-		
+	protected void invokeScopeMethod(int scopeId, String method,
+			Object... args) {
+		invokePermanentCallback("invokeMethod", method, args);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -154,12 +268,29 @@ public class NativeUIPlugin extends CordovaPlugin {
 		Integer $$childHead = transportScope.isNull("$$childHead") ? null : transportScope.getInt("$$childHead");
 		Integer $$childTail = transportScope.isNull("$$childTail") ? null : transportScope.getInt("$$childTail");
 		Integer $$nextSibling = transportScope.isNull("$$nextSibling") ? null : transportScope.getInt("$$nextSibling");
-		scopeToUpdate.nativeId = transportScope.isNull("nativeId") ? null: transportScope.getString("nativeId");
+		JSONObject nativeUIData = transportScope.isNull("nativeUI") ? null: transportScope.getJSONObject("nativeUI");
+		scopeToUpdate.getElementAttributes().clear();
+		InitCallback initCallback = null;
+		if (nativeUIData != null) {
+			scopeToUpdate.nativeId = nativeUIData.getString("nativeId");
+			initCallback = initCallbacksMap.get(scopeToUpdate.nativeId);
+			initCallbacksMap.remove(scopeToUpdate.nativeId);
+			JSONArray names = nativeUIData.names();
+			for (int i = 0; i < names.length(); i++) {
+				String name = names.getString(i);
+				scopeToUpdate.getElementAttributes().put(name, nativeUIData.getString(name));
+			}
+		}
 		scopeToUpdate.$$childHead = getExistingScopeOrCreateNewOne($$childHead, transportScopes);
 		scopeToUpdate.$$childTail = getExistingScopeOrCreateNewOne($$childTail, transportScopes);
 		scopeToUpdate.$$nextSibling = getExistingScopeOrCreateNewOne($$nextSibling, transportScopes);
 		if (scopeToUpdate.nativeId != null) {
 			nativeId2ScopeMap.put(scopeToUpdate.nativeId, scopeToUpdate);
+		}
+		if (initCallback != null) {
+			Message msg = new Message();
+			msg.obj = scopeToUpdate;
+			initCallback.init(0, scopeToUpdate);
 		}
 		return scopeToUpdate;
 	}
@@ -179,5 +310,9 @@ public class NativeUIPlugin extends CordovaPlugin {
 			scopeMap.put(id, scopeToUpdate);
 		}
 		return scopeToUpdate;
+	}
+	
+	public interface InitCallback {
+		void init(int viewId, Scope scope);
 	}
 }

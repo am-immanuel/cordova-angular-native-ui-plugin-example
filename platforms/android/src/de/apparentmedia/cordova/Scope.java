@@ -1,5 +1,8 @@
 package de.apparentmedia.cordova;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import android.os.Handler;
 
 
@@ -17,6 +20,7 @@ public class Scope {
 	public Scope $$childTail;
 	public Scope $$nextSibling;
 	public String nativeId;
+	private Map<String, String> attributes = new HashMap<String, String>(3);
 	
 	/**
 	 * Create new scope as child scope of the given parent scope.
@@ -68,5 +72,13 @@ public class Scope {
 	
 	public void $on(String eventName, Handler.Callback callback) {
 		plugin.invokeScopeMethod(this.$id, "$on", eventName, callback);
+	}
+	
+	public void $watch(String expression, Handler.Callback callback) {
+		plugin.invokeScopeMethod(this.$id, "$watch", expression, callback);
+	}
+	
+	public Map<String, String> getElementAttributes() {
+		return attributes;
 	}
 }

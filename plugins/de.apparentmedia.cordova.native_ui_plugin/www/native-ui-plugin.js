@@ -16,6 +16,14 @@ exec(function(call) {
         var expression = args[1];
         var $scope = angularScopeMap[scopeId];
         $scope.$parse(expression)($scope);
+    } else if (action == '$watch') {
+        var scopeId = args[0];
+        var expression = args[1];
+        var callback = args[2];
+        var $scope = angularScopeMap[scopeId];
+        $scope.$watch(expression, function(newValue, oldValue) {
+            exec(null, null, "native-ui-plugin", "invokeCallback", [callback, newValue, oldValue]);
+        });
     }
 }, function() {
     console.log("couldn't register permanent callback");
@@ -38,7 +46,7 @@ function addScopeAndChildScopesToScopeMap($scope, angularScopeMap, transportScop
     transportScope.$$childHead = null;
     transportScope.$$nextSibling = null;
     transportScope.$$childTail = null;
-    transportScope.nativeId = $scope.nativeId ? $scope.nativeId : null;
+    transportScope.nativeUI = $scope.nativeUI ? $scope.nativeUI : null;
     transportScope.$parent = $scope.$parent != null ? $scope.$parent.$id : null;
 
     if ($scope.$$childHead) {
@@ -88,7 +96,14 @@ if (!$rootScope.nativeUIPluginDeferred) {
             return {
                 scope: true,
                 link: function(scope, element, attributes){
-                    scope.nativeId = attributes.nativeId;
+                    scope.nativeUI = {
+                        tagName : element[0].tagName.toLowerCase()
+                    };
+                    angular.forEach(attributes, function(value, key) {
+                        if (key.indexOf('$') != 0) {
+                            scope.nativeUI[key] = attributes[key];
+                        }
+                    });
                     scope.$parse = angular.element(element).injector().get('$parse');
                     updateTransportScopeMap(scope);
                 }
