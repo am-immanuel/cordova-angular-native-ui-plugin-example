@@ -13,10 +13,10 @@ public class Activity1 extends Activity {
 	}
 	
 	public void gotoActivity2(View view) {
-		NativeUIPlugin.getInstance().getScopeByDomElementId(getResources().getResourceEntryName(view.getId())).evaluateExpression("gotoActivity2()");
+//		NativeUIPlugin.getInstance().getScopeByDomElementId(getResources().getResourceEntryName(view.getId())).evaluateExpression("gotoActivity2()");
 	}
 
 	public void updateTextField(View view) {
-		NativeUIPlugin.getInstance().getScopeByDomElementId(getResources().getResourceEntryName(view.getId())).evaluateExpression("updateTextField()");
+//		NativeUIPlugin.getInstance().getScopeByDomElementId(getResources().getResourceEntryName(view.getId())).evaluateExpression("updateTextField()");
 	}
 }

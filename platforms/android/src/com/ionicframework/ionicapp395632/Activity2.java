@@ -13,6 +13,6 @@ public class Activity2 extends Activity {
 	}
 	
 	public void gotoActivity1(View view) {
-		NativeUIPlugin.getInstance().getScopeByDomElementId(getResources().getResourceEntryName(view.getId())).evaluateExpression("gotoActivity1()");
+//		NativeUIPlugin.getInstance().getScopeByDomElementId(getResources().getResourceEntryName(view.getId())).evaluateExpression("gotoActivity1()");
 	}
 }
