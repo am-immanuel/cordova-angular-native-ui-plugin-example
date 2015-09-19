@@ -2,16 +2,20 @@ var exec = require('cordova/exec');
 
 var angularScopeMap = {};
 
+var $injector = angular.element(document.body).injector();
+var $rootScope = $injector.get('$rootScope');
+var $ionicPlatform = $injector.get('$ionicPlatform');
+var $parse = $injector.get('$parse');
+
 // register permanent callback
-exec(function(data) {
-    console.log(data);
-    if (data.elementId) {
-        var element = document.getElementById(data.elementId);
-        if (element) {
-            var $parse = angular.element(element).injector().get('$parse');
-            var scope = angular.element(element).scope();
-            $parse(data.expression)(scope);
-        }
+exec(function(call) {
+    var args = call.args;
+    var action = call.action;
+    if (action == 'evaluateScopeExpression') {
+        var scopeId = args[0];
+        var expression = args[1];
+        var $scope = angularScopeMap[scopeId];
+        $scope.$parse(expression)($scope);
     }
 }, function() {
     console.log("couldn't register permanent callback");
@@ -21,26 +25,20 @@ exports.coolMethod = function(arg0, success, error) {
     exec(success, error, "native-ui-plugin", "coolMethod", [arg0]);
 };
 
-var $rootScope = angular.element(document.body).scope().$root;
-$rootScope.$on("$stateChangeStart", function (event, toState, toParams, fromState, fromParams) {
-    exec(null, function() {
-        console.log("Could not send status change to native side");
-    }, "native-ui-plugin", "$stateChangeStart", [toState, toParams, fromState, fromParams, null]);
-});
-
 $rootScope.$on("$stateChangeSuccess", function (event, toState, toParams, fromState, fromParams) {
     exec(null, function() {
         console.log("Could not send status change to native side");
-    }, "native-ui-plugin", "$stateChangeSuccess", [toState, toParams, fromState, fromParams, getTransportScopeMap()]);
+    }, "native-ui-plugin", "$stateChangeSuccess", [toState, toParams, fromState, fromParams]);
 });
 
-function addScopeAndChildScopesToScopeMap($scope, angularScopeMap, transportScopeMap) {
+function addScopeAndChildScopesToScopeMap($scope, angularScopeMap, transportScopeMap, nativeId) {
     var transportScope = {};
     angularScopeMap[$scope.$id] = $scope;
     transportScope.id = $scope.$id;
     transportScope.$$childHead = null;
     transportScope.$$nextSibling = null;
     transportScope.$$childTail = null;
+    transportScope.nativeId = $scope.nativeId ? $scope.nativeId : null;
     transportScope.$parent = $scope.$parent != null ? $scope.$parent.$id : null;
 
     if ($scope.$$childHead) {
@@ -60,14 +58,42 @@ function addScopeAndChildScopesToScopeMap($scope, angularScopeMap, transportScop
     transportScopeMap[transportScope.id] = transportScope;
 }
 
-function getTransportScopeMap() {
-    var newAngularScopeMap = {};
+function getTransportScopeMap($scope) {
     var newTransportScopeMap = {};
-    addScopeAndChildScopesToScopeMap($rootScope, newAngularScopeMap, newTransportScopeMap);
-    angularScopeMap = newAngularScopeMap;
+    while ($scope.$parent && !angularScopeMap[$scope.$parent.$id]) {
+        $scope = $scope.$parent;
+    }
+    addScopeAndChildScopesToScopeMap($scope, angularScopeMap, newTransportScopeMap);
     return newTransportScopeMap;
 }
 
-exec(null, function() {
-    console.log("Could not send transport scope map to native side");
-}, "native-ui-plugin", "updateTransportScopeMap", [getTransportScopeMap()]);
+function updateTransportScopeMap($scope) {
+    exec(null, function() {
+        console.log("Could not send transport scope map to native side");
+    }, "native-ui-plugin", "updateTransportScopeMap", [getTransportScopeMap($scope)]);
+}
+
+$ionicPlatform.ready(function() {
+    console.log("$ionicPlatform.ready() in plugin called");
+});
+
+if (!$rootScope.nativeUIPluginDeferred) {
+    throw new Error('nativeUIPlugin is not correctly initialized in app.js');
+} else {
+    $rootScope.nativeUIPlugin = {};
+    updateTransportScopeMap($rootScope);
+    $rootScope.$apply(function()
+    {
+        $rootScope.$compileProvider.directive('nativeId', function() {
+            return {
+                scope: true,
+                link: function(scope, element, attributes){
+                    scope.nativeId = attributes.nativeId;
+                    scope.$parse = angular.element(element).injector().get('$parse');
+                    updateTransportScopeMap(scope);
+                }
+            };
+        });
+        $rootScope.nativeUIPluginDeferred.resolve($rootScope.nativeUIPlugin);
+    });
+}

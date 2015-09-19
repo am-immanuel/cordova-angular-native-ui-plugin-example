@@ -4,11 +4,7 @@
 // 'starter' is the name of this angular module example (also set in a <body> attribute in index.html)
 // the 2nd parameter is an array of 'requires'
 // 'starter.controllers' is found in controllers.js
-var exported = {};
-angular.module('starter', ['ionic', 'starter.controllers'])
-
-.run(function($ionicPlatform, $rootScope, $state) {
-  exported.$state = $state;
+angular.module('starter', ['ionic', 'starter.controllers']).run(function($ionicPlatform) {
   $ionicPlatform.ready(function() {
     // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
     // for form inputs)
@@ -22,14 +18,26 @@ angular.module('starter', ['ionic', 'starter.controllers'])
   });
 })
 
-.config(function($stateProvider, $urlRouterProvider) {
+.config(function($stateProvider, $urlRouterProvider, $compileProvider) {
   $stateProvider
 
   .state('app', {
     url: "/app",
     abstract: true,
     templateUrl: "templates/menu.html",
-    controller: 'AppCtrl'
+    controller: 'AppCtrl',
+    resolve: {
+        nativeUIPlugin: function($q, $rootScope) {
+            var cordovaIsAvailable = (typeof cordova !== 'undefined');
+            if ($rootScope.nativeUIPlugin || !cordovaIsAvailable) {
+                return cordovaIsAvailable ? $rootScope.nativeUIPlugin : {};
+            }
+            var deferred = $q.defer();
+            $rootScope.nativeUIPluginDeferred = deferred;
+            $rootScope.$compileProvider = $compileProvider;
+            return deferred.promise;
+        }
+    }
   })
 
       .state('app.activity1', {

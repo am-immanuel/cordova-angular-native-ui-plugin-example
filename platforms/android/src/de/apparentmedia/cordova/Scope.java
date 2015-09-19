@@ -16,6 +16,7 @@ public class Scope {
 	public Scope $$childHead;
 	public Scope $$childTail;
 	public Scope $$nextSibling;
+	public String nativeId;
 	
 	/**
 	 * Create new scope as child scope of the given parent scope.
@@ -36,6 +37,7 @@ public class Scope {
 	protected Scope(NativeUIPlugin plugin) {
 		this.plugin = plugin;
 		this.$id = 1;
+		this.nativeId = null;
 	}
 	
 	/**

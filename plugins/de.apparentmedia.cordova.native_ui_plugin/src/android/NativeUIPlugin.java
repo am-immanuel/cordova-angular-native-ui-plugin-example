@@ -1,10 +1,8 @@
 package de.apparentmedia.cordova;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaArgs;
@@ -32,13 +30,17 @@ public class NativeUIPlugin extends CordovaPlugin {
 	protected Context context;
 	protected Scope $rootScope;
 	protected Map<Integer, Scope> scopeMap = new HashMap<Integer, Scope>();
+	protected Map<String, Scope> nativeId2ScopeMap = new HashMap<String, Scope>();
+	
+	public NativeUIPlugin() {
+		$rootScope = new Scope(this);
+	}
 	
 	@Override
 	public void initialize(CordovaInterface cordova, CordovaWebView webView) {
 		super.initialize(cordova, webView);
 		context = cordova.getActivity();
 		INSTANCE = this;
-		$rootScope = new Scope(this);
 		scopeMap.put($rootScope.$id, $rootScope);
 	}
 	
@@ -72,11 +74,28 @@ public class NativeUIPlugin extends CordovaPlugin {
 		return true;
 	}
 	
+	public void evaluateScopeExpression(String nativeId, String expression) {
+		Scope scope = nativeId2ScopeMap.get(nativeId);
+		if (scope == null) {
+			Log.e(TAG, "native ID " + nativeId + " is not yet registered!");
+		} else {
+			evaluateScopeExpression(scope.$id, expression);
+		}
+	}
+
 	protected void evaluateScopeExpression(int scopeId, String expression) {
+		invokePermanentCallback("evaluateScopeExpression", scopeId, expression);
+	}
+
+	private void invokePermanentCallback(String action, Object... args) {
 		JSONObject message = new JSONObject();
+		JSONArray jsonArgs = new JSONArray();
 		try {
-			message.put("scopeId", scopeId);
-			message.put("expression", expression);
+			message.put("action", action);
+			for (Object arg : args) {
+				jsonArgs.put(arg);
+			}
+			message.put("args", jsonArgs);
 			PluginResult result = new PluginResult(Status.OK, message);
 			result.setKeepCallback(true);
 			getInstance().permanentCallback.sendPluginResult(result);
@@ -92,20 +111,19 @@ public class NativeUIPlugin extends CordovaPlugin {
 		return $rootScope;
 	}
 	
-	public Scope getScopeByScopeId(int scopeId) {
-		return new Scope($rootScope, scopeId);
+	public Scope getScopeByNativeId(String scopeId) {
+		return nativeId2ScopeMap.get(scopeId);
 	}
 	
 	public static NativeUIPlugin getInstance() {
 		if (INSTANCE == null) {
 			String msg = "NativeUIPlugin wasn't initialized yet";
 			Log.e(TAG, msg);
-			throw new IllegalStateException(msg);
+			return new NativeUIPlugin();
 		}
 		if (INSTANCE.permanentCallback == null) {
 			String msg = "NativeUIPlugin: Permanent callback hasn't been registered yet";
 			Log.e(TAG, msg);
-			throw new IllegalStateException(msg);
 		}
 		return INSTANCE;
 	}
@@ -120,17 +138,9 @@ public class NativeUIPlugin extends CordovaPlugin {
 		if (transportScopes == null)
 			return;
 
-		Set<Integer> oldScopeIds = new HashSet<Integer>(scopeMap.keySet());
-		Set<Integer> newScopeIds = new HashSet<Integer>(transportScopes.length());
 		Iterator<String> iter = transportScopes.keys();
 		while (iter.hasNext()) {
-			newScopeIds.add(updateJavaScope(Integer.parseInt(iter.next()), transportScopes).$id);
-		}
-		
-		// remove obsolete scopes
-		oldScopeIds.removeAll(newScopeIds);
-		for (Integer idToDelete : oldScopeIds) {
-			scopeMap.remove(idToDelete);
+			updateJavaScope(Integer.parseInt(iter.next()), transportScopes);
 		}
 	}
 	
@@ -138,15 +148,19 @@ public class NativeUIPlugin extends CordovaPlugin {
 		JSONObject transportScope = transportScopes.getJSONObject("" + id);
 		Scope scopeToUpdate = getExistingScopeOrCreateNewOne(id, transportScopes);
 		Integer $parent = transportScope.isNull("$parent") ? null : transportScope.getInt("$parent");
-		Integer $$childHead = transportScope.isNull("$$childHead") ? null : transportScope.getInt("$$childHead");
-		Integer $$childTail = transportScope.isNull("$$childTail") ? null : transportScope.getInt("$$childTail");
-		Integer $$nextSibling = transportScope.isNull("$$nextSibling") ? null : transportScope.getInt("$$nextSibling");
 		if ($parent != null && scopeToUpdate.getParent().$id != $parent) {
 			throw new IllegalStateException("parent relation is inconsistent");
 		}
+		Integer $$childHead = transportScope.isNull("$$childHead") ? null : transportScope.getInt("$$childHead");
+		Integer $$childTail = transportScope.isNull("$$childTail") ? null : transportScope.getInt("$$childTail");
+		Integer $$nextSibling = transportScope.isNull("$$nextSibling") ? null : transportScope.getInt("$$nextSibling");
+		scopeToUpdate.nativeId = transportScope.isNull("nativeId") ? null: transportScope.getString("nativeId");
 		scopeToUpdate.$$childHead = getExistingScopeOrCreateNewOne($$childHead, transportScopes);
 		scopeToUpdate.$$childTail = getExistingScopeOrCreateNewOne($$childTail, transportScopes);
 		scopeToUpdate.$$nextSibling = getExistingScopeOrCreateNewOne($$nextSibling, transportScopes);
+		if (scopeToUpdate.nativeId != null) {
+			nativeId2ScopeMap.put(scopeToUpdate.nativeId, scopeToUpdate);
+		}
 		return scopeToUpdate;
 	}
 	
@@ -155,6 +169,10 @@ public class NativeUIPlugin extends CordovaPlugin {
 			return null;
 		Scope scopeToUpdate = scopeMap.get(id);
 		if (scopeToUpdate == null) {
+			String strId = "" + id;
+			if (transportScopes.isNull(strId)) {
+				throw new IllegalStateException("Scope with ID " + id + " does not exist and is not provided from JavaScript");
+			}
 			JSONObject transportScope = transportScopes.getJSONObject("" + id);
 			Scope parentScope = getExistingScopeOrCreateNewOne(transportScope.getInt("$parent"), transportScopes);
 			scopeToUpdate = new Scope(parentScope, id);
