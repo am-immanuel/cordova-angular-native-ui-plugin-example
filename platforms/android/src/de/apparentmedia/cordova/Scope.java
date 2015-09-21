@@ -19,8 +19,7 @@ public class Scope {
 	public Scope $$childHead;
 	public Scope $$childTail;
 	public Scope $$nextSibling;
-	public String nativeId;
-	private Map<String, String> attributes = new HashMap<String, String>(3);
+	private Map<String, Map<String, String>> nativeId2Attributes;
 	
 	/**
 	 * Create new scope as child scope of the given parent scope.
@@ -41,7 +40,6 @@ public class Scope {
 	protected Scope(NativeUIPlugin plugin) {
 		this.plugin = plugin;
 		this.$id = 1;
-		this.nativeId = null;
 	}
 	
 	/**
@@ -67,7 +65,7 @@ public class Scope {
 	}
 	
 	public void evaluateExpression(String expression) {
-		plugin.evaluateScopeExpression(this.$id, expression);
+		plugin.evaluateScopeExpressionByScopeId(this.$id, expression);
 	}
 	
 	public void $on(String eventName, Handler.Callback callback) {
@@ -78,7 +76,19 @@ public class Scope {
 		plugin.invokeScopeMethod(this.$id, "$watch", expression, callback);
 	}
 	
-	public Map<String, String> getElementAttributes() {
-		return attributes;
+	public Map<String, String> getElementAttributes(String nativeId) {
+		if (nativeId2Attributes == null) {
+			nativeId2Attributes = new HashMap<String, Map<String,String>>(3);
+		}
+		Map<String, String> result = nativeId2Attributes.get(nativeId);
+		if (result == null) {
+			result = new HashMap<String, String>(3);
+			nativeId2Attributes.put(nativeId, result);
+		}
+		return result;
+	}
+
+	public String getElementAttribute(String nativeId, String attributeName) {
+		return getElementAttributes(nativeId).get(attributeName);
 	}
 }

@@ -25,7 +25,11 @@ public class Activity1 extends Activity {
 					
 					@Override
 					public boolean handleMessage(Message msg) {
-						((TextView) findViewById(R.id.textView1)).setText(msg.obj.toString());
+						if (msg.obj != null) {
+							((TextView) findViewById(R.id.textView1)).setText(msg.obj.toString());
+						} else {
+							((TextView) findViewById(R.id.textView1)).setText("");
+						}
 						return false;
 					}
 				});
@@ -39,7 +43,15 @@ public class Activity1 extends Activity {
 					
 					@Override
 					public boolean handleMessage(Message msg) {
-						editText.setText(msg.obj.toString());
+						if (msg.obj != null) {
+							String newText = msg.obj.toString();
+							String oldText = editText.getText().toString();
+							if (!oldText.equals(newText)) {
+								editText.setText(newText);
+							}
+						} else {
+							editText.setText("");
+						}
 						return false;
 					}
 				});

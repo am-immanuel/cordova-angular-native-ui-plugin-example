@@ -1,22 +1,20 @@
 <ion-view view-title="Activity 1">
   <ion-content>
     <h1>Activity 1</h1>
-          <form ng-submit="updateTextField()">
           <div class="list">
               <label class="item item-input">
                   <span class="input-label">Input</span>
-                  <input native-id="editView1" type="text" ng-model="input.text">
+                  <input native-id="editText1" type="text" ng-model="input.text">
               </label>
               <label class="item">
                   <span class="input-label">Output</span><span native-id="textView1" ng-bind="output"></span>
               </label>
               <label class="item">
-                  <button native-id="button1" class="button button-block button-positive" type="submit">Update data</button>
+                  <button native-id="button1" class="button button-block button-positive" type="submit" ng-click="updateTextField()">Update data</button>
               </label>
               <label class="item">
                   <button native-id="gotoActivity2Button" class="button button-block button-positive" type="submit" ng-click="gotoActivity2()">Go to activity 2</button>
               </label>
           </div>
-      </form>
   </ion-content>
 </ion-view>

@@ -15,7 +15,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.Context;
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Handler.Callback;
 import android.os.Message;
@@ -29,12 +29,15 @@ public class NativeUIPlugin extends CordovaPlugin {
 	public static String TAG = "NativeUIPlugin";
 	private static NativeUIPlugin INSTANCE;
 	protected CallbackContext permanentCallback;
-	protected Context context;
+	protected Activity context;
 	protected Scope $rootScope;
-	private SparseArray<Scope> scopeMap = new SparseArray<Scope>();
-	private SparseArray<Callback> callbackMap = new SparseArray<Callback>();
-	private Map<String, Scope> nativeId2ScopeMap = new HashMap<String, Scope>();
-	private Map<String, InitCallback> initCallbacksMap = new HashMap<String, InitCallback>();
+	private static SparseArray<Scope> scopeMap = new SparseArray<Scope>();
+	private static SparseArray<Callback> callbackMap = new SparseArray<Callback>();
+	private static SparseArray<String> nativeIdMap = new SparseArray<String>();
+	private static SparseArray<Scope> viewId2ScopeMap = new SparseArray<Scope>();
+	private static Map<String, Scope> nativeId2ScopeMap = new HashMap<String, Scope>();
+	private static Map<String, InitCallback> initCallbacksMap = new HashMap<String, InitCallback>();
+	private static int nextCallbackID = 1;
 	
 	public NativeUIPlugin() {
 		$rootScope = new Scope(this);
@@ -72,14 +75,21 @@ public class NativeUIPlugin extends CordovaPlugin {
 				context.startActivity(new Intent(context, Activity1.class));
 			}
 		} else if ("invokeCallback".equals(action)) {
-			int callbackHashCode = args.getInt(0);
-			Callback callback = callbackMap.get(callbackHashCode);
+			int callbackId = args.getInt(0);
+			final Object obj = args.getInt(1);
+			final Callback callback = callbackMap.get(callbackId);
 			if (callback == null) {
-				Log.e(TAG, "Could not find callback with hash " + callbackHashCode);
+				Log.e(TAG, "Could not find callback with ID " + callbackId);
 			} else {
-				Message m = new Message();
-				m.obj = args.get(1);
-				callback.handleMessage(m);
+				context.runOnUiThread(new Runnable() {
+					
+					@Override
+					public void run() {
+						Message m = new Message();
+						m.obj = obj;
+						callback.handleMessage(m);
+					}
+				});
 			}
 		} else {
 			Log.i(TAG, "action: " + action);
@@ -88,19 +98,19 @@ public class NativeUIPlugin extends CordovaPlugin {
 		return true;
 	}
 	
-	private void clickInternal(int viewId) {
-		clickInternal(getScopeByViewId(viewId));
-	}
-
 	private void bindInternal(int viewId, Callback callback) {
+		String nativeId = getNativeId(viewId);
 		Scope scope = getScopeByViewId(viewId);
-		String expression = getElementAttribute(scope, "Bind", "Model");
+		String expression = getElementAttribute(nativeId, scope, "Bind", "Model");
 		if (expression != null) {
 			invokePermanentCallback("$watch", scope.$id, expression, callback);
 		}
 	}
 
-	private void initInternal(int viewId, InitCallback callback) {
+	private void initInternal(Activity context, int viewId, InitCallback callback) {
+		if (this.context == null) {
+			this.context = context;
+		}
 		Scope scope = getScopeByViewId(viewId);
 		if (scope != null) {
 			callback.init(viewId, scope);
@@ -111,41 +121,59 @@ public class NativeUIPlugin extends CordovaPlugin {
 	}
 
 	public Scope getScopeByViewId(int viewId) {
-		if (context == null) {
-			return null;
+		Scope result = viewId2ScopeMap.get(viewId);
+		if (result == null) {
+			String nativeId = getNativeId(viewId);
+			result = nativeId2ScopeMap.get(nativeId);
+			if (result != null) {
+				viewId2ScopeMap.put(viewId, result);
+			}
 		}
-		return getScopeByNativeId(context.getResources().getResourceEntryName(viewId));
+		return result;
 	}
 	
-	private void clickInternal(Scope scope) {
-		String clickExpression = getElementAttribute(scope, "Click");
+	public String getNativeId(int viewId) {
+		String result = nativeIdMap.get(viewId);
+		if (result == null) {
+			if (context != null) {
+				result = context.getResources().getResourceEntryName(viewId);
+				nativeIdMap.put(viewId, result);
+			}
+		}
+		return result;
+	}
+	
+	private void clickInternal(int viewId) {
+		String nativeId = getNativeId(viewId);
+		Scope scope = getScopeByViewId(viewId);
+		String clickExpression = getElementAttribute(nativeId, scope, "Click");
 		if (clickExpression != null) {
-			evaluateScopeExpression(scope.$id, clickExpression);
+			evaluateScopeExpressionByScopeId(scope.$id, clickExpression);
 		}
 	}
 	
-	private String getElementAttribute(Scope scope, String ngPostfix) {
-		return getElementAttribute(scope, ngPostfix, null);
+	private String getElementAttribute(String nativeId, Scope scope, String ngPostfix) {
+		return getElementAttribute(nativeId, scope, ngPostfix, null);
 	}
 	
-	private String getElementAttribute(Scope scope, String ngPostfix, String ngPostfix2) {
+	private String getElementAttribute(String nativeId, Scope scope, String ngPostfix, String ngPostfix2) {
 		if (scope != null) {
-			String expression = scope.getElementAttributes().get("ng" + ngPostfix);
+			String expression = scope.getElementAttribute(nativeId, "ng" + ngPostfix);
 			if (expression != null) {
 				return expression;
 			}
-			expression = scope.getElementAttributes().get("dataNg" + ngPostfix);
+			expression = scope.getElementAttribute(nativeId, "dataNg" + ngPostfix);
 			if (expression != null) {
 				return expression;
 			}
 			if (ngPostfix2 == null) {
 				return null;
 			}
-			expression = scope.getElementAttributes().get("ng" + ngPostfix2);
+			expression = scope.getElementAttribute(nativeId, "ng" + ngPostfix2);
 			if (expression != null) {
 				return expression;
 			}
-			expression = scope.getElementAttributes().get("dataNg" + ngPostfix2);
+			expression = scope.getElementAttribute(nativeId, "dataNg" + ngPostfix2);
 			if (expression != null) {
 				return expression;
 			}
@@ -161,8 +189,8 @@ public class NativeUIPlugin extends CordovaPlugin {
 		getInstance().bindInternal(viewId, callback);
 	}
 	
-	public static void init(int viewId, InitCallback callback) {
-		getInstance().initInternal(viewId, callback);
+	public static void init(Activity context, int viewId, InitCallback callback) {
+		getInstance().initInternal(context, viewId, callback);
 	}
 
 	public static void set(int viewId, Object value) {
@@ -170,21 +198,22 @@ public class NativeUIPlugin extends CordovaPlugin {
 	}
 	
 	private void setInternal(int viewId, Object value) {
+		String nativeId = getNativeId(viewId);
 		Scope scope = getScopeByViewId(viewId);
-		String modelExpression = getElementAttribute(scope, "Model");
+		String modelExpression = getElementAttribute(nativeId, scope, "Model");
 		if (modelExpression != null) {
-			evaluateScopeExpression(scope.$id, modelExpression + "='" + value.toString().replaceAll("'", "\\'") + "'");
+			evaluateScopeExpressionByScopeId(scope.$id, modelExpression + "='" + value.toString().replaceAll("'", "\\'") + "'");
 		}
 	}
 
-	public void evaluateScopeExpression(String nativeId, String expression) {
-		Scope scope = getScopeByNativeId(nativeId);
+	public void evaluateScopeExpression(int viewId, String expression) {
+		Scope scope = getScopeByViewId(viewId);
 		if (scope != null) {
-			evaluateScopeExpression(scope.$id, expression);
+			evaluateScopeExpressionByScopeId(scope.$id, expression);
 		}
 	}
 
-	protected void evaluateScopeExpression(int scopeId, String expression) {
+	protected void evaluateScopeExpressionByScopeId(int scopeId, String expression) {
 		invokePermanentCallback("evaluateScopeExpression", scopeId, expression);
 	}
 
@@ -195,9 +224,9 @@ public class NativeUIPlugin extends CordovaPlugin {
 			message.put("action", action);
 			for (Object arg : args) {
 				if (arg instanceof Callback) {
-					int hashCode = arg.hashCode();
-					jsonArgs.put(hashCode);
-					callbackMap.put(hashCode, (Callback) arg);
+					int callbackID = getNextCallbackID();
+					jsonArgs.put(callbackID);
+					callbackMap.put(callbackID, (Callback) arg);
 				} else {
 					jsonArgs.put(arg);
 				}
@@ -216,14 +245,6 @@ public class NativeUIPlugin extends CordovaPlugin {
 	 */
 	public Scope getRootScope() {
 		return $rootScope;
-	}
-	
-	protected Scope getScopeByNativeId(String nativeId) {
-		Scope result = nativeId2ScopeMap.get(nativeId);
-		if (result == null) {
-			Log.e(TAG, "native ID " + nativeId + " is not yet registered!");
-		}
-		return result;
 	}
 	
 	public static NativeUIPlugin getInstance() {
@@ -265,29 +286,33 @@ public class NativeUIPlugin extends CordovaPlugin {
 		Integer $$childHead = transportScope.isNull("$$childHead") ? null : transportScope.getInt("$$childHead");
 		Integer $$childTail = transportScope.isNull("$$childTail") ? null : transportScope.getInt("$$childTail");
 		Integer $$nextSibling = transportScope.isNull("$$nextSibling") ? null : transportScope.getInt("$$nextSibling");
-		JSONObject nativeUIData = transportScope.isNull("nativeUI") ? null: transportScope.getJSONObject("nativeUI");
-		scopeToUpdate.getElementAttributes().clear();
-		InitCallback initCallback = null;
-		if (nativeUIData != null) {
-			scopeToUpdate.nativeId = nativeUIData.getString("nativeId");
-			initCallback = initCallbacksMap.get(scopeToUpdate.nativeId);
-			initCallbacksMap.remove(scopeToUpdate.nativeId);
-			JSONArray names = nativeUIData.names();
-			for (int i = 0; i < names.length(); i++) {
-				String name = names.getString(i);
-				scopeToUpdate.getElementAttributes().put(name, nativeUIData.getString(name));
-			}
-		}
 		scopeToUpdate.$$childHead = getExistingScopeOrCreateNewOne($$childHead, transportScopes);
 		scopeToUpdate.$$childTail = getExistingScopeOrCreateNewOne($$childTail, transportScopes);
 		scopeToUpdate.$$nextSibling = getExistingScopeOrCreateNewOne($$nextSibling, transportScopes);
-		if (scopeToUpdate.nativeId != null) {
-			nativeId2ScopeMap.put(scopeToUpdate.nativeId, scopeToUpdate);
-		}
-		if (initCallback != null) {
-			Message msg = new Message();
-			msg.obj = scopeToUpdate;
-			initCallback.init(0, scopeToUpdate);
+		
+		JSONObject nativeUIData = transportScope.isNull("nativeUI") ? null: transportScope.getJSONObject("nativeUI");
+		InitCallback initCallback = null;
+		if (nativeUIData != null) {
+			JSONArray nativeIds = nativeUIData.names();
+			for (int i = 0; i < nativeIds.length(); i++) {
+				String nativeId = nativeIds.getString(i);
+				Map<String, String> attributesMap = scopeToUpdate.getElementAttributes(nativeId);
+				attributesMap.clear();
+				JSONObject attributesJsonObject = nativeUIData.getJSONObject(nativeId);
+				JSONArray attributeNames = attributesJsonObject.names();
+				for (int j = 0; j < attributeNames.length(); j++) {
+					String name = attributeNames.getString(j);
+					attributesMap.put(name, attributesJsonObject.getString(name));
+				}
+				initCallback = initCallbacksMap.get(nativeId);
+				initCallbacksMap.remove(nativeId);
+				nativeId2ScopeMap.put(nativeId, scopeToUpdate);
+				if (initCallback != null) {
+					Message msg = new Message();
+					msg.obj = scopeToUpdate;
+					initCallback.init(0, scopeToUpdate);
+				}
+			}
 		}
 		return scopeToUpdate;
 	}
@@ -307,6 +332,10 @@ public class NativeUIPlugin extends CordovaPlugin {
 			scopeMap.put(id, scopeToUpdate);
 		}
 		return scopeToUpdate;
+	}
+	
+	private synchronized static int getNextCallbackID() {
+		return nextCallbackID++;
 	}
 	
 	public interface InitCallback {

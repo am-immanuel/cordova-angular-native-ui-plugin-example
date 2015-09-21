@@ -11,20 +11,20 @@ var $parse = $injector.get('$parse');
 exec(function(call) {
     var args = call.args;
     var action = call.action;
-    if (action == 'evaluateScopeExpression') {
-        var scopeId = args[0];
-        var expression = args[1];
-        var $scope = angularScopeMap[scopeId];
-        $scope.$parse(expression)($scope);
-    } else if (action == '$watch') {
-        var scopeId = args[0];
-        var expression = args[1];
-        var callback = args[2];
-        var $scope = angularScopeMap[scopeId];
-        $scope.$watch(expression, function(newValue, oldValue) {
-            exec(null, null, "native-ui-plugin", "invokeCallback", [callback, newValue, oldValue]);
-        });
-    }
+    var scopeId = args[0];
+    var $scope = angularScopeMap[scopeId];
+    $scope.$apply(function() {
+        if (action == 'evaluateScopeExpression') {
+            var expression = args[1];
+            $scope.$parse(expression)($scope);
+        } else if (action == '$watch') {
+            var expression = args[1];
+            var callback = args[2];
+            $scope.$watch(expression, function(newValue, oldValue) {
+                exec(null, null, "native-ui-plugin", "invokeCallback", [callback, newValue, oldValue]);
+            });
+        }
+    });
 }, function() {
     console.log("couldn't register permanent callback");
 }, "native-ui-plugin", "registerPermanentCallback", []);
@@ -94,14 +94,20 @@ if (!$rootScope.nativeUIPluginDeferred) {
     {
         $rootScope.$compileProvider.directive('nativeId', function() {
             return {
-                scope: true,
+                scope: false,
                 link: function(scope, element, attributes){
-                    scope.nativeUI = {
-                        tagName : element[0].tagName.toLowerCase()
-                    };
+                    if (!scope.nativeUI) {
+                        scope.nativeUI = {};
+                    }
+                    var nativeId = attributes['nativeId'];
+                    var nativeUIForElement = scope.nativeUI[nativeId];
+                    if (!nativeUIForElement) {
+                        scope.nativeUI[nativeId] = nativeUIForElement = {};
+                    }
+                    nativeUIForElement.tagName = element[0].tagName.toLowerCase();
                     angular.forEach(attributes, function(value, key) {
                         if (key.indexOf('$') != 0) {
-                            scope.nativeUI[key] = attributes[key];
+                            nativeUIForElement[key] = attributes[key];
                         }
                     });
                     scope.$parse = angular.element(element).injector().get('$parse');
