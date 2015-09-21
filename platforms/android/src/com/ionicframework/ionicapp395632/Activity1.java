@@ -37,6 +37,8 @@ public class Activity1 extends Activity {
 		});
 		final EditText editText = ((EditText) findViewById(R.id.editText1));
 		init(this, editText.getId(), new NativeUIPlugin.InitCallback() {
+			protected String lastUpdateCausedByMe;
+			protected String lastUpdateReceived;
 			@Override
 			public void init(int viewId, Scope scope) {
 				bind(editText.getId(), new Handler.Callback() {
@@ -44,10 +46,10 @@ public class Activity1 extends Activity {
 					@Override
 					public boolean handleMessage(Message msg) {
 						if (msg.obj != null) {
-							String newText = msg.obj.toString();
+							lastUpdateReceived = msg.obj.toString();
 							String oldText = editText.getText().toString();
-							if (!oldText.equals(newText)) {
-								editText.setText(newText);
+							if (!oldText.equals(lastUpdateReceived) && !lastUpdateCausedByMe.equals(lastUpdateReceived)) {
+								editText.setText(lastUpdateReceived);
 							}
 						} else {
 							editText.setText("");
@@ -59,7 +61,10 @@ public class Activity1 extends Activity {
 					
 					@Override
 					public void onTextChanged(CharSequence s, int start, int before, int count) {
-						set(editText.getId(), s);
+						lastUpdateCausedByMe = s.toString();
+						if (!lastUpdateCausedByMe.equals(lastUpdateReceived)) {
+							set(editText.getId(), lastUpdateCausedByMe);
+						}
 					}
 					
 					@Override
