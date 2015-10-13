@@ -17,10 +17,19 @@ import org.json.JSONObject;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Handler;
 import android.os.Handler.Callback;
 import android.os.Message;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import com.ionicframework.ionicapp395632.Activity1;
 import com.ionicframework.ionicapp395632.Activity2;
@@ -38,6 +47,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 	private static Map<String, Scope> nativeId2ScopeMap = new HashMap<String, Scope>();
 	private static Map<String, InitCallback> initCallbacksMap = new HashMap<String, InitCallback>();
 	private static int nextCallbackID = 1;
+	private static View contentView;
 	
 	public NativeUIPlugin() {
 		$rootScope = new Scope(this);
@@ -195,6 +205,33 @@ public class NativeUIPlugin extends CordovaPlugin {
 		getInstance().initInternal(context, viewId, callback);
 	}
 
+	public static void init(Activity context, int layoutId){
+		context.setContentView(layoutId);
+		contentView = context.findViewById(android.R.id.content);
+		init(context, contentView);
+	}
+
+	private static void init(Activity context, View view) {
+		if(view != null){
+			int childrenCount = ((ViewGroup)view).getChildCount();
+			String msg = "NativeUiPlugin: Count of children: " + childrenCount;
+			Log.i(TAG, msg);
+			for(int i=0; i< childrenCount; ++i) {
+				View nextChild = ((ViewGroup)view).getChildAt(i);
+				if(nextChild instanceof LinearLayout || nextChild instanceof RelativeLayout){
+					init(context, nextChild);
+				}else if(nextChild instanceof EditText) {
+                    getInstance().initInternal(context, nextChild.getId(), editTextCallback);
+                }else if(nextChild instanceof TextView) {
+					getInstance().initInternal(context, nextChild.getId(), textViewCallback);
+				}
+			}
+		}else{
+			String msg = "NativeUiPlugin: ContentView not found";
+			Log.e(TAG, msg);
+		}
+	}
+
 	public static void set(int viewId, Object value) {
 		getInstance().setInternal(viewId, value);
 	}
@@ -318,6 +355,78 @@ public class NativeUIPlugin extends CordovaPlugin {
 		}
 		return scopeToUpdate;
 	}
+
+	private static InitCallback textViewCallback = new NativeUIPlugin.InitCallback() {
+		@Override
+		public void init(int viewId, Scope scope) {
+			final TextView textView = (TextView)contentView.findViewById(viewId);
+			if(textView != null){
+				bind(textView.getId(), new Handler.Callback() {
+
+					@Override
+					public boolean handleMessage(Message msg) {
+						if (msg.obj != null) {
+							textView.setText(msg.obj.toString());
+						} else {
+							textView.setText("");
+						}
+						return false;
+					}
+				});
+			}
+		}
+
+		;
+	};
+
+	private static InitCallback editTextCallback = new InitCallback() {
+		protected String lastUpdateCausedByMe;
+		protected String lastUpdateReceived;
+		@Override
+		public void init(int viewId, Scope scope) {
+			final EditText editText = (EditText)contentView.findViewById(viewId);
+			if(editText != null){
+				bind(editText.getId(), new Handler.Callback() {
+
+					@Override
+					public boolean handleMessage(Message msg) {
+						if (msg.obj != null) {
+							lastUpdateReceived = msg.obj.toString();
+							String oldText = editText.getText().toString();
+							if (!oldText.equals(lastUpdateReceived) && !lastUpdateCausedByMe.equals(lastUpdateReceived)) {
+								editText.setText(lastUpdateReceived);
+							}
+						} else {
+							editText.setText("");
+						}
+						return false;
+					}
+				});
+				editText.addTextChangedListener(new TextWatcher() {
+
+					@Override
+					public void onTextChanged(CharSequence s, int start, int before, int count) {
+						lastUpdateCausedByMe = s.toString();
+						if (!lastUpdateCausedByMe.equals(lastUpdateReceived)) {
+							set(editText.getId(), lastUpdateCausedByMe);
+						}
+					}
+
+					@Override
+					public void beforeTextChanged(CharSequence s, int start, int count,
+												  int after) {
+
+					}
+
+					@Override
+					public void afterTextChanged(Editable s) {
+
+					}
+				});
+			}
+
+		}
+	};
 	
 	private Scope getExistingScopeOrCreateNewOne(Integer id, JSONObject transportScopes) throws JSONException {
 		if (id == null) 

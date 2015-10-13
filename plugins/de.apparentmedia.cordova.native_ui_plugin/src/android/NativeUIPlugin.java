@@ -223,10 +223,10 @@ public class NativeUIPlugin extends CordovaPlugin {
                 View nextChild = ((ViewGroup)view).getChildAt(i);
                 if(nextChild instanceof LinearLayout || nextChild instanceof RelativeLayout){
                     init(context, nextChild);
-                }else if(nextChild instanceof TextView) {
-                    getInstance().initInternal(context, nextChild.getId(), textViewCallback);
                 }else if(nextChild instanceof EditText) {
                     getInstance().initInternal(context, nextChild.getId(), editTextCallback);
+                }else if(nextChild instanceof TextView) {
+                    getInstance().initInternal(context, nextChild.getId(), textViewCallback);
                 }
             }
         }else{
