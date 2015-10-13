@@ -4,7 +4,7 @@
           <div class="list">
               <label class="item item-input">
                   <span class="input-label">Input</span>
-                  <input native-id="editText1" type="text" ng-model="input.text">
+                  <input ng-click="gotoActivity2()" native-id="editText1" type="text" ng-model="input.text">
               </label>
               <label class="item">
                   <span class="input-label">Output</span><span native-id="textView1" ng-bind="input.text"></span>
@@ -15,6 +15,7 @@
               <label class="item">
                   <button native-id="gotoActivity2Button" class="button button-block button-positive" type="submit" ng-click="gotoActivity2()">Go to activity 2</button>
               </label>
+              <img ng-src="img/ionic.png" native-id="imageView1"/>
           </div>
   </ion-content>
 </ion-view>

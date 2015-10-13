@@ -28,6 +28,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -39,7 +40,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 	public static String TAG = "NativeUIPlugin";
 	private static NativeUIPlugin INSTANCE;
 	protected CallbackContext permanentCallback;
-	protected Activity context;
+	protected static Activity context;
 	protected Scope $rootScope;
 	private static SparseArray<Scope> scopeMap = new SparseArray<Scope>();
 	private static SparseArray<Callback> callbackMap = new SparseArray<Callback>();
@@ -120,17 +121,14 @@ public class NativeUIPlugin extends CordovaPlugin {
 		}
 	}
 
-    private void bindInternalClick(View view) {
+    private void bindInternal(View view, String attribute, Callback callback) {
         String nativeId = getNativeId(view.getId());
         Scope scope = getScopeByViewId(view.getId());
-        String modelExpression = getElementAttribute(nativeId, scope, "Click");
+        String modelExpression = getElementAttribute(nativeId, scope, attribute);
         if (modelExpression != null) {
-            view.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    click(v.getId());
-                }
-            });
+            Message msg = new Message();
+            msg.obj = modelExpression;
+            callback.handleMessage(msg);
         }
     }
 
@@ -217,8 +215,23 @@ public class NativeUIPlugin extends CordovaPlugin {
 		getInstance().bindInternal(viewId, callback);
 	}
 
-    public static void bindClick(View view) {
-        getInstance().bindInternalClick(view);
+    public static void bindClick(final View view) {
+        getInstance().bindInternal(view, "Click", new Callback() {
+            @Override
+            public boolean handleMessage(Message msg) {
+                view.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        click(v.getId());
+                    }
+                });
+                return false;
+            }
+        });
+    }
+
+    public static void bindImgSrc(View view, Callback callback) {
+        getInstance().bindInternal(view, "Src", callback);
     }
 	
 	public static void init(Activity context, int viewId, InitCallback callback) {
@@ -240,7 +253,9 @@ public class NativeUIPlugin extends CordovaPlugin {
 				View nextChild = ((ViewGroup)view).getChildAt(i);
 				if(nextChild instanceof LinearLayout || nextChild instanceof RelativeLayout){
 					init(context, nextChild);
-				}else if(nextChild instanceof Button) {
+				}else if(nextChild instanceof ImageView) {
+                    getInstance().initInternal(context, nextChild.getId(), imageViewCallback);
+                }else if(nextChild instanceof Button) {
                     getInstance().initInternal(context, nextChild.getId(), buttonCallback);
                 }else if(nextChild instanceof EditText) {
                     getInstance().initInternal(context, nextChild.getId(), editTextCallback);
@@ -381,6 +396,34 @@ public class NativeUIPlugin extends CordovaPlugin {
 		return scopeToUpdate;
 	}
 
+    private static InitCallback imageViewCallback = new NativeUIPlugin.InitCallback() {
+        @Override
+        public void init(int viewId, Scope scope) {
+            final ImageView imageView = (ImageView)contentView.findViewById(viewId);
+            if(imageView != null){
+                bindImgSrc(imageView, new Callback() {
+                    @Override
+                    public boolean handleMessage(Message msg) {
+
+                        String[] parts = msg.obj.toString().split("/");
+                        String imgName = parts[parts.length - 1];
+                        System.out.println(imgName);
+                        parts = imgName.split("\\.");
+                        imgName = parts[0];
+                        System.out.println(imgName);
+
+                        int resId = context.getResources().getIdentifier(imgName, "drawable", context.getApplicationContext().getPackageName());
+                        System.out.println("resourceId : " + resId);
+                        imageView.setImageResource(resId);
+                        return false;
+                    }
+                });
+            }
+        }
+
+        ;
+    };
+
     private static InitCallback buttonCallback = new NativeUIPlugin.InitCallback() {
         @Override
         public void init(int viewId, Scope scope) {
@@ -398,7 +441,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 		public void init(int viewId, Scope scope) {
 			final TextView textView = (TextView)contentView.findViewById(viewId);
 			if(textView != null){
-				bind(textView.getId(), new Handler.Callback() {
+				bind(textView, new Handler.Callback() {
 
 					@Override
 					public boolean handleMessage(Message msg) {
@@ -423,7 +466,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 		public void init(int viewId, Scope scope) {
 			final EditText editText = (EditText)contentView.findViewById(viewId);
 			if(editText != null){
-				bind(editText.getId(), new Handler.Callback() {
+				bind(editText, new Handler.Callback() {
 
 					@Override
 					public boolean handleMessage(Message msg) {
