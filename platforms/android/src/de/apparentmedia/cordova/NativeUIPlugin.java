@@ -26,6 +26,7 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -119,6 +120,21 @@ public class NativeUIPlugin extends CordovaPlugin {
 		}
 	}
 
+    private void bindInternalClick(View view) {
+        String nativeId = getNativeId(view.getId());
+        Scope scope = getScopeByViewId(view.getId());
+        String modelExpression = getElementAttribute(nativeId, scope, "Click");
+        if (modelExpression != null) {
+            view.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    click(v.getId());
+                }
+            });
+        }
+    }
+
+
 	private void initInternal(Activity context, int viewId, InitCallback callback) {
 		if (this.context == null) {
 			this.context = context;
@@ -200,6 +216,10 @@ public class NativeUIPlugin extends CordovaPlugin {
 	public static void bind(int viewId, Callback callback) {
 		getInstance().bindInternal(viewId, callback);
 	}
+
+    public static void bindClick(View view) {
+        getInstance().bindInternalClick(view);
+    }
 	
 	public static void init(Activity context, int viewId, InitCallback callback) {
 		getInstance().initInternal(context, viewId, callback);
@@ -220,11 +240,14 @@ public class NativeUIPlugin extends CordovaPlugin {
 				View nextChild = ((ViewGroup)view).getChildAt(i);
 				if(nextChild instanceof LinearLayout || nextChild instanceof RelativeLayout){
 					init(context, nextChild);
-				}else if(nextChild instanceof EditText) {
+				}else if(nextChild instanceof Button) {
+                    getInstance().initInternal(context, nextChild.getId(), buttonCallback);
+                }else if(nextChild instanceof EditText) {
                     getInstance().initInternal(context, nextChild.getId(), editTextCallback);
                 }else if(nextChild instanceof TextView) {
 					getInstance().initInternal(context, nextChild.getId(), textViewCallback);
 				}
+
 			}
 		}else{
 			String msg = "NativeUiPlugin: ContentView not found";
@@ -244,6 +267,8 @@ public class NativeUIPlugin extends CordovaPlugin {
 			evaluateScopeExpressionByScopeId(scope.$id, modelExpression + "='" + value.toString().replaceAll("'", "\\'") + "'");
 		}
 	}
+
+
 
 	public void evaluateScopeExpression(int viewId, String expression) {
 		Scope scope = getScopeByViewId(viewId);
@@ -355,6 +380,18 @@ public class NativeUIPlugin extends CordovaPlugin {
 		}
 		return scopeToUpdate;
 	}
+
+    private static InitCallback buttonCallback = new NativeUIPlugin.InitCallback() {
+        @Override
+        public void init(int viewId, Scope scope) {
+            final Button button = (Button)contentView.findViewById(viewId);
+            if(button != null){
+                bindClick(button);
+            }
+        }
+
+        ;
+    };
 
 	private static InitCallback textViewCallback = new NativeUIPlugin.InitCallback() {
 		@Override

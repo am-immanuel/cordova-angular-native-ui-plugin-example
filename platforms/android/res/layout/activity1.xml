@@ -24,14 +24,12 @@
         android:id="@+id/button1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Update data"
-        android:onClick="updateTextField" />
+        android:text="Update data" />
 
     <Button
         android:id="@+id/gotoActivity2Button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:onClick="gotoActivity2"
         android:text="Go to activity 2"
           />
 

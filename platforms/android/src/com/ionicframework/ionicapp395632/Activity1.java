@@ -20,12 +20,5 @@ public class Activity1 extends Activity {
 		init(this, R.layout.activity1);
 
 	}
-	
-	public void gotoActivity2(View view) {
-		click(view.getId());
-	}
 
-	public void updateTextField(View view) {
-		click(view.getId());
-	}
 }
