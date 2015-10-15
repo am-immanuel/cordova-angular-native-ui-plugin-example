@@ -14,16 +14,14 @@ import org.apache.cordova.PluginResult.Status;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import android.os.Handler;
-
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Handler;
 import android.os.Handler.Callback;
 import android.os.Message;
 import android.text.Editable;
 import android.text.TextWatcher;
-
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
@@ -35,7 +33,6 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-
 import com.ionicframework.ionicapp395632.Activity1;
 import com.ionicframework.ionicapp395632.Activity2;
 
@@ -43,8 +40,8 @@ public class NativeUIPlugin extends CordovaPlugin {
 	public static String TAG = "NativeUIPlugin";
 	private static NativeUIPlugin INSTANCE;
 	protected CallbackContext permanentCallback;
-    protected static Activity context;
-    protected Scope $rootScope;
+	protected static Activity context;
+	protected Scope $rootScope;
 	private static SparseArray<Scope> scopeMap = new SparseArray<Scope>();
 	private static SparseArray<Callback> callbackMap = new SparseArray<Callback>();
 	private static SparseArray<String> nativeIdMap = new SparseArray<String>();
@@ -52,8 +49,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 	private static Map<String, Scope> nativeId2ScopeMap = new HashMap<String, Scope>();
 	private static Map<String, InitCallback> initCallbacksMap = new HashMap<String, InitCallback>();
 	private static int nextCallbackID = 1;
-    private static View contentView;
-
+	private static View contentView;
 	
 	public NativeUIPlugin() {
 		$rootScope = new Scope(this);
@@ -92,7 +88,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 			}
 		} else if ("invokeCallback".equals(action)) {
 			int callbackId = args.getInt(0);
-			final Object obj = args.getInt(1);
+			final Object obj = args.get(1);
 			final Callback callback = callbackMap.get(callbackId);
 			if (callback == null) {
 				Log.e(TAG, "Could not find callback with ID " + callbackId);
@@ -102,11 +98,14 @@ public class NativeUIPlugin extends CordovaPlugin {
 					@Override
 					public void run() {
 						Message m = new Message();
-						m.obj = obj;
+						if (obj != JSONObject.NULL) {
+							m.obj = obj;
+						}
 						callback.handleMessage(m);
 					}
 				});
 			}
+
 		} else {
 			Log.i(TAG, "action: " + action);
 			callbackContext.success();
@@ -124,7 +123,6 @@ public class NativeUIPlugin extends CordovaPlugin {
 	}
 
     private void bindInternal(View view, String attribute, Callback callback) {
-
         String nativeId = getNativeId(view.getId());
         Scope scope = getScopeByViewId(view.getId());
         String modelExpression = getElementAttribute(nativeId, scope, attribute);
@@ -134,8 +132,6 @@ public class NativeUIPlugin extends CordovaPlugin {
             callback.handleMessage(msg);
         }
     }
-
-
 
 
 	private void initInternal(Activity context, int viewId, InitCallback callback) {
@@ -216,69 +212,67 @@ public class NativeUIPlugin extends CordovaPlugin {
 		getInstance().clickInternal(viewId);
 	}
 	
-	public static void bind(int viewId, Callback callback) {
-		getInstance().bindInternal(viewId, callback);
+	public static void bind(View view, Callback callback) {
+		getInstance().bindInternal(view.getId(), callback);
+        bindClick(view);
 	}
 
     public static void bindClick(final View view) {
         getInstance().bindInternal(view, "Click", new Callback() {
-            @Override
-            public boolean handleMessage(Message msg) {
-                view.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        click(v.getId());
-                    }
-                });
-                return false;
-            }
-        });
+			@Override
+			public boolean handleMessage(Message msg) {
+				view.setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						click(v.getId());
+					}
+				});
+				return false;
+			}
+		});
     }
+
+
 
     public static void bindImgSrc(View view, Callback callback) {
         getInstance().bindInternal(view, "Src", callback);
     }
-
-
-
 	
 	public static void init(Activity context, int viewId, InitCallback callback) {
 		getInstance().initInternal(context, viewId, callback);
 	}
 
-    public static void init(Activity context, int layoutId){
-        context.setContentView(layoutId);
-        contentView = context.findViewById(android.R.id.content);
-        init(context, contentView);
-    }
+	public static void init(Activity context, int layoutId){
+		context.setContentView(layoutId);
+		contentView = context.findViewById(android.R.id.content);
+		init(context, contentView);
+	}
 
-    private static void init(Activity context, View view) {
-
-        if(view != null){
-            int childrenCount = ((ViewGroup)view).getChildCount();
-            String msg = "NativeUiPlugin: Count of children: " + childrenCount;
-            Log.i(TAG, msg);
-            for(int i=0; i< childrenCount; ++i) {
-                View nextChild = ((ViewGroup)view).getChildAt(i);
-                if(nextChild instanceof LinearLayout || nextChild instanceof RelativeLayout){
-                    init(context, nextChild);
-                }else if(nextChild instanceof ImageView) {
+	private static void init(Activity context, View view) {
+		if(view != null){
+			int childrenCount = ((ViewGroup)view).getChildCount();
+			String msg = "NativeUiPlugin: Count of children: " + childrenCount;
+			Log.i(TAG, msg);
+			for(int i=0; i< childrenCount; ++i) {
+				View nextChild = ((ViewGroup)view).getChildAt(i);
+				if(nextChild instanceof LinearLayout || nextChild instanceof RelativeLayout){
+					init(context, nextChild);
+				}else if(nextChild instanceof ImageView) {
                     getInstance().initInternal(context, nextChild.getId(), imageViewCallback);
                 }else if(nextChild instanceof Button) {
                     getInstance().initInternal(context, nextChild.getId(), buttonCallback);
                 }else if(nextChild instanceof EditText) {
                     getInstance().initInternal(context, nextChild.getId(), editTextCallback);
                 }else if(nextChild instanceof TextView) {
-                    getInstance().initInternal(context, nextChild.getId(), textViewCallback);
-                }
-            }
-        }else{
-            String msg = "NativeUiPlugin: ContentView not found";
-            Log.e(TAG, msg);
-        }
-    }
+					getInstance().initInternal(context, nextChild.getId(), textViewCallback);
+				}
 
-
+			}
+		}else{
+			String msg = "NativeUiPlugin: ContentView not found";
+			Log.e(TAG, msg);
+		}
+	}
 
 	public static void set(int viewId, Object value) {
 		getInstance().setInternal(viewId, value);
@@ -292,6 +286,8 @@ public class NativeUIPlugin extends CordovaPlugin {
 			evaluateScopeExpressionByScopeId(scope.$id, modelExpression + "='" + value.toString().replaceAll("'", "\\'") + "'");
 		}
 	}
+
+
 
 	public void evaluateScopeExpression(int viewId, String expression) {
 		Scope scope = getScopeByViewId(viewId);
@@ -309,16 +305,18 @@ public class NativeUIPlugin extends CordovaPlugin {
 		JSONArray jsonArgs = new JSONArray();
 		try {
 			message.put("action", action);
-			for (Object arg : args) {
-				if (arg instanceof Callback) {
-					int callbackID = getNextCallbackID();
-					jsonArgs.put(callbackID);
-					callbackMap.put(callbackID, (Callback) arg);
-				} else {
-					jsonArgs.put(arg);
+			if(args != null) {
+				for (Object arg : args) {
+					if (arg instanceof Callback) {
+						int callbackID = getNextCallbackID();
+						jsonArgs.put(callbackID);
+						callbackMap.put(callbackID, (Callback) arg);
+					} else {
+						jsonArgs.put(arg);
+					}
 				}
+				message.put("args", jsonArgs);
 			}
-			message.put("args", jsonArgs);
 			PluginResult result = new PluginResult(Status.OK, message);
 			result.setKeepCallback(true);
 			getInstance().permanentCallback.sendPluginResult(result);
@@ -346,6 +344,12 @@ public class NativeUIPlugin extends CordovaPlugin {
 		}
 		return INSTANCE;
 	}
+
+	public static void backButtonPressed() {
+		getInstance().invokePermanentCallback("nativeBackButtonPressed");
+	}
+
+
 
 	protected void invokeScopeMethod(int scopeId, String method,
 			Object... args) {
@@ -404,7 +408,6 @@ public class NativeUIPlugin extends CordovaPlugin {
 		return scopeToUpdate;
 	}
 
-
     private static InitCallback imageViewCallback = new NativeUIPlugin.InitCallback() {
         @Override
         public void init(int viewId, Scope scope) {
@@ -433,7 +436,7 @@ public class NativeUIPlugin extends CordovaPlugin {
         ;
     };
 
-    private static InitCallback buttonCallback = new NativeUIPlugin.InitCallback() {
+	private static InitCallback buttonCallback = new NativeUIPlugin.InitCallback() {
         @Override
         public void init(int viewId, Scope scope) {
             final Button button = (Button)contentView.findViewById(viewId);
@@ -444,80 +447,78 @@ public class NativeUIPlugin extends CordovaPlugin {
 
         ;
     };
-   
-    private static InitCallback textViewCallback = new NativeUIPlugin.InitCallback() {
-        @Override
-        public void init(int viewId, Scope scope) {
-            final TextView textView = (TextView)contentView.findViewById(viewId);
-            if(textView != null){
-                bind(textView, new Handler.Callback() {
 
-                    @Override
-                    public boolean handleMessage(Message msg) {
-                        if (msg.obj != null) {
-                            textView.setText(msg.obj.toString());
-                        } else {
-                            textView.setText("");
-                        }
-                        return false;
-                    }
-                });
-            }
-        }
+	private static InitCallback textViewCallback = new NativeUIPlugin.InitCallback() {
+		@Override
+		public void init(int viewId, Scope scope) {
+			final TextView textView = (TextView)contentView.findViewById(viewId);
+			if(textView != null){
+				bind(textView, new Handler.Callback() {
 
-        ;
-    };
+					@Override
+					public boolean handleMessage(Message msg) {
+						if (msg.obj != null) {
+							textView.setText(msg.obj.toString());
+						} else {
+							textView.setText("");
+						}
+						return false;
+					}
+				});
+			}
+		}
 
-    private static InitCallback editTextCallback = new InitCallback() {
-        protected String lastUpdateCausedByMe;
-        protected String lastUpdateReceived;
-        @Override
-        public void init(int viewId, Scope scope) {
-            final EditText editText = (EditText)contentView.findViewById(viewId);
-            if(editText != null){
-                bind(editText, new Handler.Callback() {
+		;
+	};
 
-                    @Override
-                    public boolean handleMessage(Message msg) {
-                        if (msg.obj != null) {
-                            lastUpdateReceived = msg.obj.toString();
-                            String oldText = editText.getText().toString();
-                            if (!oldText.equals(lastUpdateReceived) && !lastUpdateCausedByMe.equals(lastUpdateReceived)) {
-                                editText.setText(lastUpdateReceived);
-                            }
-                        } else {
-                            editText.setText("");
-                        }
-                        return false;
-                    }
-                });
-                editText.addTextChangedListener(new TextWatcher() {
+	private static InitCallback editTextCallback = new InitCallback() {
+		protected String lastUpdateCausedByMe;
+		protected String lastUpdateReceived;
+		@Override
+		public void init(int viewId, Scope scope) {
+			final EditText editText = (EditText)contentView.findViewById(viewId);
+			if(editText != null){
+				bind(editText, new Handler.Callback() {
 
-                    @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {
-                        lastUpdateCausedByMe = s.toString();
-                        if (!lastUpdateCausedByMe.equals(lastUpdateReceived)) {
-                            set(editText.getId(), lastUpdateCausedByMe);
-                        }
-                    }
+					@Override
+					public boolean handleMessage(Message msg) {
+						if (msg.obj != null) {
+							lastUpdateReceived = msg.obj.toString();
+							String oldText = editText.getText().toString();
+							if (!oldText.equals(lastUpdateReceived) && !lastUpdateCausedByMe.equals(lastUpdateReceived)) {
+								editText.setText(lastUpdateReceived);
+							}
+						} else {
+							editText.setText("");
+						}
+						return false;
+					}
+				});
+				editText.addTextChangedListener(new TextWatcher() {
 
-                    @Override
-                    public void beforeTextChanged(CharSequence s, int start, int count,
-                                                  int after) {
+					@Override
+					public void onTextChanged(CharSequence s, int start, int before, int count) {
+						lastUpdateCausedByMe = s.toString();
+						if (!lastUpdateCausedByMe.equals(lastUpdateReceived)) {
+							set(editText.getId(), lastUpdateCausedByMe);
+						}
+					}
 
-                    }
+					@Override
+					public void beforeTextChanged(CharSequence s, int start, int count,
+												  int after) {
 
-                    @Override
-                    public void afterTextChanged(Editable s) {
+					}
 
-                    }
-                });
-            }
+					@Override
+					public void afterTextChanged(Editable s) {
 
-        }
-    };
+					}
+				});
+			}
 
-
+		}
+	};
 	
 	private Scope getExistingScopeOrCreateNewOne(Integer id, JSONObject transportScopes) throws JSONException {
 		if (id == null) 

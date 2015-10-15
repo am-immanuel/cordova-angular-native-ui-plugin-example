@@ -105,6 +105,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 					}
 				});
 			}
+
 		} else {
 			Log.i(TAG, "action: " + action);
 			callbackContext.success();
@@ -217,18 +218,20 @@ public class NativeUIPlugin extends CordovaPlugin {
 
     public static void bindClick(final View view) {
         getInstance().bindInternal(view, "Click", new Callback() {
-            @Override
-            public boolean handleMessage(Message msg) {
-                view.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        click(v.getId());
-                    }
-                });
-                return false;
-            }
-        });
+			@Override
+			public boolean handleMessage(Message msg) {
+				view.setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						click(v.getId());
+					}
+				});
+				return false;
+			}
+		});
     }
+
+
 
     public static void bindImgSrc(View view, Callback callback) {
         getInstance().bindInternal(view, "Src", callback);
@@ -301,16 +304,18 @@ public class NativeUIPlugin extends CordovaPlugin {
 		JSONArray jsonArgs = new JSONArray();
 		try {
 			message.put("action", action);
-			for (Object arg : args) {
-				if (arg instanceof Callback) {
-					int callbackID = getNextCallbackID();
-					jsonArgs.put(callbackID);
-					callbackMap.put(callbackID, (Callback) arg);
-				} else {
-					jsonArgs.put(arg);
+			if(args != null) {
+				for (Object arg : args) {
+					if (arg instanceof Callback) {
+						int callbackID = getNextCallbackID();
+						jsonArgs.put(callbackID);
+						callbackMap.put(callbackID, (Callback) arg);
+					} else {
+						jsonArgs.put(arg);
+					}
 				}
+				message.put("args", jsonArgs);
 			}
-			message.put("args", jsonArgs);
 			PluginResult result = new PluginResult(Status.OK, message);
 			result.setKeepCallback(true);
 			getInstance().permanentCallback.sendPluginResult(result);
@@ -338,6 +343,12 @@ public class NativeUIPlugin extends CordovaPlugin {
 		}
 		return INSTANCE;
 	}
+
+	public static void backButtonPressed() {
+		getInstance().invokePermanentCallback("nativeBackButtonPressed");
+	}
+
+
 
 	protected void invokeScopeMethod(int scopeId, String method,
 			Object... args) {
@@ -424,7 +435,7 @@ public class NativeUIPlugin extends CordovaPlugin {
         ;
     };
 
-    private static InitCallback buttonCallback = new NativeUIPlugin.InitCallback() {
+	private static InitCallback buttonCallback = new NativeUIPlugin.InitCallback() {
         @Override
         public void init(int viewId, Scope scope) {
             final Button button = (Button)contentView.findViewById(viewId);

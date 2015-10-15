@@ -9,7 +9,7 @@
         android:id="@+id/gotoActivity1Button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Go to activity 1" 
-        android:onClick="gotoActivity1" />
+        android:text="Go to activity 1"/>
+
 
 </LinearLayout>
