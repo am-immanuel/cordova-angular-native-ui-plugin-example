@@ -1,5 +1,10 @@
 package de.apparentmedia.cordova;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import android.os.Handler;
+
 
 /**
  * Core class for the AngularJS scope bridge between
@@ -10,18 +15,22 @@ package de.apparentmedia.cordova;
 public class Scope {
 	private Scope parent;
 	private NativeUIPlugin plugin;
-	private String domElementId;
+	public final int $id;
+	public Scope $$childHead;
+	public Scope $$childTail;
+	public Scope $$nextSibling;
+	private Map<String, Map<String, String>> nativeId2Attributes;
 	
 	/**
 	 * Create new scope as child scope of the given parent scope.
 	 * @param parentScope The parent scope for which a new child should be created.
 	 */
-	public Scope(Scope parentScope, String domElementId) {
+	public Scope(Scope parentScope, int id) {
 		if (parentScope == null) {
 			throw new RuntimeException("parent scope is mandatory");
 		}
 		this.parent = parentScope;
-		this.domElementId = domElementId;
+		this.$id = id;
 		this.plugin = parentScope.plugin;
 	}
 	
@@ -30,6 +39,7 @@ public class Scope {
 	 */
 	protected Scope(NativeUIPlugin plugin) {
 		this.plugin = plugin;
+		this.$id = 1;
 	}
 	
 	/**
@@ -55,6 +65,30 @@ public class Scope {
 	}
 	
 	public void evaluateExpression(String expression) {
-		plugin.evaluateScopeExpression(this.domElementId, expression);
+		plugin.evaluateScopeExpressionByScopeId(this.$id, expression);
+	}
+	
+	public void $on(String eventName, Handler.Callback callback) {
+		plugin.invokeScopeMethod(this.$id, "$on", eventName, callback);
+	}
+	
+	public void $watch(String expression, Handler.Callback callback) {
+		plugin.invokeScopeMethod(this.$id, "$watch", expression, callback);
+	}
+	
+	public Map<String, String> getElementAttributes(String nativeId) {
+		if (nativeId2Attributes == null) {
+			nativeId2Attributes = new HashMap<String, Map<String,String>>(3);
+		}
+		Map<String, String> result = nativeId2Attributes.get(nativeId);
+		if (result == null) {
+			result = new HashMap<String, String>(3);
+			nativeId2Attributes.put(nativeId, result);
+		}
+		return result;
+	}
+
+	public String getElementAttribute(String nativeId, String attributeName) {
+		return getElementAttributes(nativeId).get(attributeName);
 	}
 }

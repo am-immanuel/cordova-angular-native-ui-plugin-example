@@ -20,9 +20,31 @@ exec(function(call) {
         } else if (action == '$watch') {
             var expression = args[1];
             var callback = args[2];
-            $scope.$watch(expression, function(newValue, oldValue) {
-                exec(null, null, "native-ui-plugin", "invokeCallback", [callback, newValue, oldValue]);
-            });
+
+            // args[3] is contains scope binding variables and full text divided by a separator '#'
+            if (typeof args[3] !== "undefined") {
+                $scope.$watch(expression, function(newValue, oldValue) {
+                    var multipleExpressions = args[3].split("#");
+                    var fullText = multipleExpressions[multipleExpressions.length-1];
+
+                    // replace variables with their current values
+                    for (var i=0; i<multipleExpressions.length-1; i++) {
+                        if (multipleExpressions[i] != expression) {
+                            fullText = fullText.replace(multipleExpressions[i], $scope.$parse(multipleExpressions[i])($scope));
+                        } else {
+                            fullText = fullText.replace(expression, newValue);
+                        }
+                    }
+                    fullText = fullText.replace(/{{/g, "").replace(/}}/g, "");
+
+                    // send Java the complete text with the new value from the watched expression
+                    exec(null, null, "native-ui-plugin", "invokeCallback", [callback, fullText, oldValue]);
+                });
+            } else {
+                $scope.$watch(expression, function (newValue, oldValue) {
+                    exec(null, null, "native-ui-plugin", "invokeCallback", [callback, newValue, oldValue]);
+                });
+            }
         }
     });
 }, function() {
@@ -105,6 +127,42 @@ if (!$rootScope.nativeUIPluginDeferred) {
                         scope.nativeUI[nativeId] = nativeUIForElement = {};
                     }
                     nativeUIForElement.tagName = element[0].tagName.toLowerCase();
+                    nativeUIForElement.innerBindingHTML = element[0].innerHTML;
+
+                    // compile innerHTML text if directive innerBinding exists
+                    scope.$compileProvider.directive("innerBinding", function($compile) {
+                        return function (scope2, element, attrs) {
+                            scope2.$watch(
+                                function (scope) {
+                                    return scope.$eval(attrs.compile);
+                                },
+                                function (value) {
+                                    // set value with innerHTML because directive innerBinding has no value
+                                    value = element[0].innerHTML;
+                                    element.html(value);
+
+                                    // compile content
+                                    var content = $compile(element.contents())(scope2);
+
+                                    // get current native ID and the corresponding native UI elements
+                                    var nativeId = attrs['nativeId'];
+                                    var nativeUIForElement = scope2.nativeUI[nativeId];
+                                    if (!nativeUIForElement) {
+                                        scope2.nativeUI[nativeId] = nativeUIForElement = {};
+                                    }
+
+                                    // set innerBinding with compiled content
+                                    nativeUIForElement.innerBinding = content[0].textContent;
+
+                                    // only update scope if no {{*}} exist anymore
+                                    if (nativeUIForElement.innerBinding.indexOf("{{") < 0) {
+                                        updateTransportScopeMap(scope2);
+                                    }
+                                }
+                            );
+                        }
+                    });
+
                     angular.forEach(attributes, function(value, key) {
                         if (key.indexOf('$') != 0) {
                             nativeUIForElement[key] = attributes[key];

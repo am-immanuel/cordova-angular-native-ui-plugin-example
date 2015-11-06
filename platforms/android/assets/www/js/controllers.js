@@ -58,7 +58,7 @@ angular.module('starter.controllers', [])
         }
         $scope.gotoActivity2 = function() {
             $state.go('app.activity2');
-        }
+        };
         $scope.$watch('input.text', function(newValue, oldValue) {
             console.log("input changed: " + newValue);
         });
@@ -66,5 +66,20 @@ angular.module('starter.controllers', [])
     .controller('Activity2Ctrl', function($scope, $stateParams, $state  ) {
         $scope.gotoActivity1 = function() {
             $state.go('app.activity1');
-        }
+        };
+        $scope.title = "Activity 2";
+
+        $scope.counter = 0;
+        $scope.countClicks = function() {
+            $scope.counter = $scope.counter + 1;
+        };
+
+        $scope.result = $scope.counter;
+        $scope.calc = function() {
+            $scope.result = $scope.result + $scope.counter;
+            $scope.alert = $scope.result < 5 ? "No" : "Yes";
+        };
+
+        $scope.alert = $scope.result < 5 ? "No" : "Yes";
+
     });

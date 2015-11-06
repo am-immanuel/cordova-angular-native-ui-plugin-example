@@ -1,10 +1,22 @@
-<ion-view view-title="Activity 2">
+<ion-view view-title="{{title}}">
   <ion-content>
     <h1>Activity 2</h1>
       <form>
           <div class="list">
               <label class="item">
                   <button native-id="gotoActivity1Button" class="button button-block button-positive" type="submit" ng-click="gotoActivity1()">Go to activity 1</button>
+              </label>
+              <label class="item">
+                  <button native-id="countClicksButton" class="button button-block button-positive" type="submit" ng-click="countClicks()">Click me</button>
+              </label>
+              <label class="item">
+                  <button native-id="calcButton" class="button button-block button-positive" type="submit" ng-click="calc()">Calc</button>
+              </label>
+              <label class="item">
+                  <span native-id="outputNumberOfClicks" inner-binding>Count {{counter}} and Calc {{result}}</span>
+              </label>
+              <label class="item">
+                  <span native-id="outputWarning" inner-binding>Warning: {{alert}}</span>
               </label>
           </div>
       </form>
