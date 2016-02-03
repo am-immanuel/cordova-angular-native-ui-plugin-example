@@ -55,6 +55,7 @@ angular.module('starter.controllers', [])
         $scope.input = {};
         $scope.updateTextField = function() {
             $scope.output = $scope.input.text;
+            $scope.name1 = "Trinity";
         }
         $scope.gotoActivity2 = function() {
             $state.go('app.activity2');
@@ -62,6 +63,47 @@ angular.module('starter.controllers', [])
         $scope.$watch('input.text', function(newValue, oldValue) {
             console.log("input changed: " + newValue);
         });
+
+        $scope.gender = "empty";
+
+        $scope.name1 = "Morpheus";
+        $scope.name2 = "Neo";
+        $scope.color = "red";
+
+        $scope.supermarketList = {};
+        $scope.supermarket = function() {
+            var list = "";
+            Object.keys($scope.supermarketList).forEach(function(key) {
+                if ($scope.supermarketList[key] == true) {
+                    list = list + key + ", ";
+                }
+                //list = list + $scope.supermarketList[key] + ", ";
+            });
+            return list;
+        };
+        $scope.showList = Object.getOwnPropertyNames($scope.supermarketList).length > 0 ? $scope.supermarket() : "Empty";
+
+        $scope.$watchCollection('supermarketList', function(newValue, oldValue) {
+            $scope.showList = $scope.supermarket();
+        });
+
+        $scope.backgroundColor = "white";
+        $scope.wlanSwitch = "ON";
+
+        $scope.textArray = ["Hallo", "Hello", "Hola", "Servus", "Ciao"];
+        $scope.myText = $scope.textArray[0];
+        $scope.counter = 1;
+        $scope.switchText = function() {
+            if ($scope.counter < $scope.textArray.length) {
+                $scope.myText = $scope.textArray[$scope.counter];
+                $scope.counter ++;
+
+            } else {
+                $scope.counter = 0;
+                $scope.myText = $scope.textArray[$scope.counter];
+            }
+        };
+
     })
     .controller('Activity2Ctrl', function($scope, $stateParams, $state  ) {
         $scope.gotoActivity1 = function() {
@@ -81,5 +123,4 @@ angular.module('starter.controllers', [])
         };
 
         $scope.alert = $scope.result < 5 ? "No" : "Yes";
-
     });

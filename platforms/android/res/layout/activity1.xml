@@ -35,12 +35,117 @@
         android:id="@+id/gotoActivity2Button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Go to activity 2"
-        android:onClick="gotoActivity2"  />
+        android:text="Go to activity 2"/>
+        <!--android:onClick="gotoActivity2"  />-->
 
-    <ImageView
+    <!--<ImageView
             android:id="@+id/imageView1"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content" />-->
+
+    <TextView
+            android:id="@+id/radioGender"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="" />
+
+    <RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+        <RadioButton
+                android:id="@+id/radioGenderMale"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Male"/>
+        <!--android:onClick="clickGender"-->
+
+        <RadioButton
+                android:id="@+id/radioGenderFemale"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Female"/>
+        <!--android:onClick="clickGender"/>-->
+    </RadioGroup>
+
+    <TextView
+            android:id="@+id/outputGender"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="" />
+
+    <TextView
+            android:id="@+id/outputTest"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="" />
+
+    <TextView
+            android:id="@+id/outputCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="" />
+
+    <CheckBox
+            android:id="@+id/check1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Milk"
+            />
+
+    <CheckBox
+            android:id="@+id/check2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Cheese"
+            />
+
+    <CheckBox
+            android:id="@+id/check3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Bread"
+            />
+
+    <CheckBox
+            android:id="@+id/check4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Eggs"
+            />
+
+    <TextView
+            android:id="@+id/outputList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="" />
+
+    <ToggleButton
+            android:id="@+id/toggleLight"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textOn="ON"
+            android:textOff="OFF"
+            android:checked="true"
+            />
+
+    <TextView
+            android:id="@+id/outputToggle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="" />
+
+    <Switch
+            android:id="@+id/switchWlan"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="WLAN Switch"
+            />
+
+    <TextView
+            android:id="@+id/outputSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="" />
 
 </LinearLayout>

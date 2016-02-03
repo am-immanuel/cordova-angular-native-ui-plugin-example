@@ -16,6 +16,57 @@
                   <button native-id="gotoActivity2Button" class="button button-block button-positive" type="submit" ng-click="gotoActivity2()">Go to activity 2</button>
               </label>
               <img ng-src="img/ionic.png" native-id="imageView1"/>
+              <label class="item">
+                  <span native-id="radioGender" class="input-label">Choose your gender: </span>
+                  <ion-radio native-id="radioGenderMale" ng-model="gender" value="male">Male</ion-radio>
+                  <label>
+                      <input native-id="radioGenderFemale" type="radio" ng-model="gender" value="female"><span>Female</span>
+                  </label>
+              </label>
+              <label class="item">
+                  <span native-id="outputGender">Your gender is {{gender}}</span>
+              </label>
+              <label class="item">
+                  <span native-id="outputTest" ng-bind-template="{{name1}} said: Take the color {{color}} pill, {{name2}}!"></span>
+              </label>
+              <label class="item">
+                  <span native-id="outputCheckbox" class="input-label">Super Market List: </span>
+                  <ion-checkbox native-id="check1" ng-model="supermarketList.milk">Milk</ion-checkbox>
+                  <ion-checkbox native-id="check2" ng-model="supermarketList.cheese">Cheese</ion-checkbox>
+                  <label>
+                      <input native-id="check3" type="checkbox" ng-model="supermarketList.bread"><span>Bread</span>
+                  </label>
+                  <label>
+                      <input native-id="check4" type="checkbox" ng-model="supermarketList.eggs"><span>Eggs</span>
+                  </label>
+              </label>
+              <label class="item">
+                  <span native-id="outputList">You need {{showList}}</span>
+              </label>
+              <ion-checkbox native-id="toggleLight" ng-model="backgroundColor" ng-true-value="'black'"
+                         ng-false-value="'white'">Invert Background Color</ion-checkbox>
+              <label class="item">
+                  <span native-id="outputToggle">The light is {{backgroundColor}}</span>
+              </label>
+
+              <ion-toggle native-id="switchWlan" ng-model="wlanSwitch" ng-true-value="'ON'"
+                          ng-false-value="'OFF'">WLAN Switch</ion-toggle>
+              <label class="item">
+                  <span native-id="outputSwitch">WLAN is {{wlanSwitch}}</span>
+              </label>
+
+              <label class="item item-input item-select">
+                  <div class="input-label">Test</div>
+                  <select>
+                      <option>A</option>
+                      <option>B</option>
+                  </select>
+              </label>
+
+              <label class="item">
+                  <label>{{myText}}</label>
+                  <button ng-click="switchText()"></button>
+              </label>
           </div>
   </ion-content>
 </ion-view>

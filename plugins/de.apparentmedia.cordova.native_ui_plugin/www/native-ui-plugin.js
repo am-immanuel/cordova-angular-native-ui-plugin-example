@@ -30,15 +30,16 @@ exec(function(call) {
                     // replace variables with their current values
                     for (var i=0; i<multipleExpressions.length-1; i++) {
                         if (multipleExpressions[i] != expression) {
-                            fullText = fullText.replace(multipleExpressions[i], $scope.$parse(multipleExpressions[i])($scope));
+                            fullText = fullText.replace("{{" + multipleExpressions[i] + "}}", $scope.$parse(multipleExpressions[i])($scope));
                         } else {
-                            fullText = fullText.replace(expression, newValue);
+                            fullText = fullText.replace("{{" + expression + "}}", newValue);
                         }
                     }
-                    fullText = fullText.replace(/{{/g, "").replace(/}}/g, "");
+                    //fullText = fullText.replace(/{{/g, "").replace(/}}/g, "");
 
                     // send Java the complete text with the new value from the watched expression
                     exec(null, null, "native-ui-plugin", "invokeCallback", [callback, fullText, oldValue]);
+                    //exec(null, null, "native-ui-plugin", "invokeCallback", [callback, newValue, oldValue, expression, rawText]);
                 });
             } else {
                 $scope.$watch(expression, function (newValue, oldValue) {
@@ -61,7 +62,7 @@ $rootScope.$on("$stateChangeSuccess", function (event, toState, toParams, fromSt
     }, "native-ui-plugin", "$stateChangeSuccess", [toState, toParams, fromState, fromParams]);
 });
 
-function addScopeAndChildScopesToScopeMap($scope, angularScopeMap, transportScopeMap, nativeId) {
+function addScopeAndChildScopesToScopeMap($scope, angularScopeMap, transportScopeMap) {
     var transportScope = {};
     angularScopeMap[$scope.$id] = $scope;
     transportScope.id = $scope.$id;
@@ -127,10 +128,16 @@ if (!$rootScope.nativeUIPluginDeferred) {
                         scope.nativeUI[nativeId] = nativeUIForElement = {};
                     }
                     nativeUIForElement.tagName = element[0].tagName.toLowerCase();
-                    nativeUIForElement.innerBindingHTML = element[0].innerHTML;
+                    //nativeUIForElement.innerBindingHTML = element[0].innerHTML;
+
+                    if (element[0].innerText) {
+                        nativeUIForElement.innerBindingHTML = element[0].innerText;
+                    } else if (attributes["ngBindTemplate"]) {
+                        nativeUIForElement.innerBindingHTML = element[0].attributes.getNamedItem("ng-bind-template").value;
+                    }
 
                     // compile innerHTML text if directive innerBinding exists
-                    scope.$compileProvider.directive("innerBinding", function($compile) {
+                    /*scope.$compileProvider.directive("innerBinding", function($compile) {
                         return function (scope2, element, attrs) {
                             scope2.$watch(
                                 function (scope) {
@@ -161,7 +168,7 @@ if (!$rootScope.nativeUIPluginDeferred) {
                                 }
                             );
                         }
-                    });
+                    });*/
 
                     angular.forEach(attributes, function(value, key) {
                         if (key.indexOf('$') != 0) {

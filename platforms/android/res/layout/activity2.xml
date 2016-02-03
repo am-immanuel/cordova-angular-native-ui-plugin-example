@@ -9,22 +9,22 @@
         android:id="@+id/gotoActivity1Button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Go to activity 1"
-        android:onClick="gotoActivity1"/>
+        android:text="Go to activity 1"/>
+        <!--android:onClick="gotoActivity1"/>-->
 
     <Button
             android:id="@+id/countClicksButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Click me"
-            android:onClick="countClicks" />
+            android:text="Click me"/>
+            <!--android:onClick="countClicks" />-->
 
     <Button
             android:id="@+id/calcButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Calc"
-            android:onClick="calc" />
+            android:text="Calc"/>
+            <!--android:onClick="calc" />-->
 
     <TextView
             android:id="@+id/outputNumberOfClicks"

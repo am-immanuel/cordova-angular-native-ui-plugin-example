@@ -18,6 +18,13 @@
     {
       "id": "http://schemas.android.com/apk/res/android",
       "locator": "../native-ui-plugin/"
+    },
+    "cordova-plugin-splashscreen"
+  ],
+  "cordovaPlatforms": [
+    {
+      "platform": "android",
+      "locator": "browser"
     }
   ]
 }

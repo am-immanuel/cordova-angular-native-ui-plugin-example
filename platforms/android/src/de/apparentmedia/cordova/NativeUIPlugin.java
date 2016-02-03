@@ -1,5 +1,7 @@
 package de.apparentmedia.cordova;
 
+import static de.apparentmedia.cordova.NativeUIPlugin.getInstance;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -17,8 +19,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.R;
+import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Intent;
+import android.content.res.Resources;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Handler.Callback;
 import android.os.Message;
@@ -29,11 +36,16 @@ import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
+import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 
 import com.ionicframework.ionicapp395632.Activity1;
 import com.ionicframework.ionicapp395632.Activity2;
@@ -50,8 +62,11 @@ public class NativeUIPlugin extends CordovaPlugin {
 	private static SparseArray<Scope> viewId2ScopeMap = new SparseArray<Scope>();
 	private static Map<String, Scope> nativeId2ScopeMap = new HashMap<String, Scope>();
 	private static Map<String, InitCallback> initCallbacksMap = new HashMap<String, InitCallback>();
+	private static Map<String, Integer> mapNativeId2ViewId = new HashMap<String, Integer>();	// new
 	private static int nextCallbackID = 1;
 	private static View contentView;
+	
+	private boolean splashScreen = true;
 	
 	public NativeUIPlugin() {
 		$rootScope = new Scope(this);
@@ -79,7 +94,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 			JSONObject toState = args.getJSONObject(0);
 			JSONObject toParams = args.getJSONObject(1);
 			JSONObject fromState = args.getJSONObject(2);
-			JSONObject fromParams = args.getJSONObject(3);
+			JSONObject fromParams = args.getJSONObject(3);			
 			Log.i(TAG, toState.getString("name"));
 			if ("app.activity2".equals(toState.getString("name"))) {
 				Intent intentActivity2 = new Intent(context, Activity2.class);
@@ -88,13 +103,16 @@ public class NativeUIPlugin extends CordovaPlugin {
 				context.startActivity(intentActivity2);
 			} else if ("app.activity1".equals(toState.getString("name"))) {
 				Intent intentActivity1 = new Intent(context, Activity1.class);
-				//intentActivity1.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-				//intentActivity1.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+				intentActivity1.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+				intentActivity1.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+				//setSplashScreen(false);
 				context.startActivity(intentActivity1);
 			}
 		} else if ("invokeCallback".equals(action)) {
 			int callbackId = args.getInt(0);
 			final Object obj = args.get(1);
+			//final Object obj2 = args.get(2);		// new
+			//final Object obj3 = args.get(3);		// new
 			final Callback callback = callbackMap.get(callbackId);
 			if (callback == null) {
 				Log.e(TAG, "Could not find callback with ID " + callbackId);
@@ -105,6 +123,8 @@ public class NativeUIPlugin extends CordovaPlugin {
 					public void run() {
 						Message m = new Message();
 						if (obj != JSONObject.NULL) {
+							//Object[] msgList= {obj, obj2, obj3};	// new
+							//m.obj = msgList;
 							m.obj = obj;
 						}
 						callback.handleMessage(m);
@@ -124,13 +144,19 @@ public class NativeUIPlugin extends CordovaPlugin {
 		String expression = getElementAttribute(nativeId, scope, "Bind", "Model");
 		
 		if (expression != null) {
-			if (expression.matches("(.*)#(.*)")) {
+			if (expression.matches("1#(.*)")) {
 				String[] multipleExpressions = expression.split("#");
-				//String fullText = multipleExpressions[multipleExpressions.length-1];
+				expression = multipleExpressions[1];
+				TextView tv = (TextView)contentView.findViewById(viewId);
+				tv.setText(expression);
+			
+			} else if (expression.matches("2#(.*)")) {
+				String[] multipleExpressions = expression.split("#");
 				for (int i=0; i<multipleExpressions.length-1; i++) {
 					invokePermanentCallback("$watch", scope.$id, multipleExpressions[i], callback, expression);
 				}
-			} else {
+				
+			}  else {
 				invokePermanentCallback("$watch", scope.$id, expression, callback);
 			}
 		}
@@ -183,14 +209,89 @@ public class NativeUIPlugin extends CordovaPlugin {
 		return result;
 	}
 	
-	private void clickInternal(int viewId) {
+	/*private void clickInternal(int viewId) {
 		String nativeId = getNativeId(viewId);
 		Scope scope = getScopeByViewId(viewId);
 		String clickExpression = getElementAttribute(nativeId, scope, "Click");
 		if (clickExpression != null) {
 			evaluateScopeExpressionByScopeId(scope.$id, clickExpression);
 		}
+	}*/
+	
+	// new
+	/*public static void radioClick(int viewId) {
+		getInstance().radioClickInternal(viewId);
+	}*/
+	
+	public static void checkClick(View view) {
+		getInstance().checkClickInternal(view);
 	}
+	
+	// new
+	/*private void radioClickInternal(int viewId) {
+		String nativeId = getNativeId(viewId);
+		Scope scope = getScopeByViewId(viewId);
+		String valueExpression = getElementAttribute(nativeId, scope, "value");
+		String modelExpression = getElementAttribute(nativeId, scope, "Model");
+		if ( (valueExpression != null) && (modelExpression != null) ) {
+			evaluateScopeExpressionByScopeId(scope.$id, modelExpression + "='" + valueExpression + "'");
+		}
+	}*/
+	
+	// new
+		@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+		private void checkClickInternal(View view) {
+			String nativeId = getNativeId(view.getId());
+			Scope scope = getScopeByViewId(view.getId());
+			
+			// new
+			Boolean checked = null;
+			if (view.getClass().getName().equals("android.widget.CheckBox")) {
+				checked = ((CheckBox) view).isChecked();
+			} else if (view.getClass().getName().equals("android.widget.ToggleButton")) {
+				checked = ((ToggleButton) view).isChecked();
+			} else if (view.getClass().getName().equals("android.widget.Switch")) {
+				checked = ((Switch) view).isChecked();
+			}
+			
+			
+			/*try {
+				checked = ((CheckBox) view).isChecked();
+			} catch (Exception e) {
+				try {
+					checked = ((ToggleButton) view).isChecked();
+				} catch (Exception ex) {
+					try {
+						checked = ((Switch) view).isChecked();
+					} catch (Exception exc) {
+						checked = false;
+					}
+				}
+			}*/
+		
+			String modelExpression = getElementAttribute(nativeId, scope, "Model");
+			String valueExpression = getElementAttribute(nativeId, scope, "value");		// new
+			String trueExpression = getElementAttribute(nativeId, scope, "TrueValue");
+			String falseExpression = getElementAttribute(nativeId, scope, "FalseValue");
+			String clickExpression = getElementAttribute(nativeId, scope, "Click");		// new
+			
+			if (modelExpression != null) {
+				if (valueExpression != null) {		// new
+					evaluateScopeExpressionByScopeId(scope.$id, modelExpression + "='" + valueExpression + "'");
+				} else if (checked && (trueExpression != null)) {
+					evaluateScopeExpressionByScopeId(scope.$id, modelExpression + "=" + trueExpression + "");
+				} else if (!checked && (falseExpression != null)) {
+					evaluateScopeExpressionByScopeId(scope.$id, modelExpression + "=" + falseExpression + "");
+				} else if (checked != null){
+					evaluateScopeExpressionByScopeId(scope.$id, modelExpression + "=" + checked + "");
+				}	
+			}
+			
+			// new
+			if (clickExpression != null) {
+				evaluateScopeExpressionByScopeId(scope.$id, clickExpression);
+			}
+		}
 	
 	private String getElementAttribute(String nativeId, Scope scope, String ngPostfix) {
 		return getElementAttribute(nativeId, scope, ngPostfix, null);
@@ -206,6 +307,28 @@ public class NativeUIPlugin extends CordovaPlugin {
 			if (expression != null) {
 				return expression;
 			}
+			
+			// new
+			expression = scope.getElementAttribute(nativeId, ngPostfix);
+			if (expression != null) {
+				return expression;
+			}
+			
+			/*expression = scope.getElementAttribute(nativeId, "value");
+			if (expression != null) {
+				return expression;
+			}
+			
+			expression = scope.getElementAttribute(nativeId, "TrueValue");
+			if (expression != null) {
+				return expression;
+			}
+			
+			expression = scope.getElementAttribute(nativeId, "FalseValue");
+			if (expression != null) {
+				return expression;
+			}*/
+			
 			if (ngPostfix2 == null) {
 				return null;
 			}
@@ -219,6 +342,12 @@ public class NativeUIPlugin extends CordovaPlugin {
 			}
 			
 			expression = scope.getElementAttribute(nativeId, "innerBindingHTML");
+			
+			// only necessary if an error occurs in an element with ng-bind-template
+			if (expression == null) {
+				expression = scope.getElementAttribute(nativeId, "ngBindTemplate");
+			}
+			
 			if (expression != null) {
 				Pattern p = Pattern.compile("\\{\\{\\w+\\}\\}");
 				Matcher m = p.matcher(expression);
@@ -227,23 +356,24 @@ public class NativeUIPlugin extends CordovaPlugin {
 					bindExpression = bindExpression + m.group().replace("{", "").replace("}", "") + "#" ; 
 				}
 				
-				String e = scope.getElementAttribute(nativeId, "innerBinding");
-				if (e != null) {
-					bindExpression = bindExpression + expression;
+				if (bindExpression != "") {
+					bindExpression = "2#" + bindExpression + expression;
 				} else {
-					bindExpression = bindExpression + "";
+					bindExpression = "1#" + expression;
 				}
 				
 				return bindExpression;
 			}
+			
+			
 
 		}
 		return null;
 	}
 	
-	public static void click(int viewId) {
+	/*public static void click(int viewId) {
 		getInstance().clickInternal(viewId);
-	}
+	}*/
 	
 	public static void bind(int viewId, Callback callback) {
 		getInstance().bindInternal(viewId, callback);
@@ -256,7 +386,34 @@ public class NativeUIPlugin extends CordovaPlugin {
 				view.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
-						click(v.getId());
+						//click(v.getId());
+						checkClick(v);
+					}
+				});
+				return false;
+			}
+		});
+    }
+    
+    // new
+    // TODO: instanceof --> getClass()
+    public static void bindRadioClick(final View view) {
+        getInstance().bindInternal(view, "Model", new Callback() {
+			@Override
+			public boolean handleMessage(Message msg) {
+				view.setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						checkClick(v);		// new
+						/*if (v instanceof Switch) {
+							checkClick(v);
+						} else if (v instanceof ToggleButton) {
+							checkClick(v);
+						} else if (v instanceof RadioButton) {
+							radioClick(v.getId());
+						} else if (v instanceof CheckBox) {
+							checkClick(v);
+						} */
 					}
 				});
 				return false;
@@ -287,16 +444,30 @@ public class NativeUIPlugin extends CordovaPlugin {
 				View nextChild = ((ViewGroup)view).getChildAt(i);
 				if(nextChild instanceof LinearLayout || nextChild instanceof RelativeLayout){
 					init(context, nextChild);
-				}else if(nextChild instanceof ImageView) {
+				}else { 
+					//new
+					String nativeId = context.getResources().getResourceEntryName(nextChild.getId());
+					mapNativeId2ViewId.put(nativeId, nextChild.getId());
+					// end new
+					
+					if(nextChild instanceof ImageView) {
                     getInstance().initInternal(context, nextChild.getId(), imageViewCallback);
-                }else if(nextChild instanceof Button) {
+                }else if(nextChild instanceof Switch) {
+					getInstance().initInternal(context, nextChild.getId(), switchButtonCallback);
+				}else if(nextChild instanceof ToggleButton) {
+					getInstance().initInternal(context, nextChild.getId(), toggleButtonCallback);
+				}else if(nextChild instanceof RadioButton) {
+					getInstance().initInternal(context, nextChild.getId(), radioButtonCallback);
+				}else if(nextChild instanceof CheckBox) {
+					getInstance().initInternal(context, nextChild.getId(), checkboxCallback);
+				}else if(nextChild instanceof Button) {
                     getInstance().initInternal(context, nextChild.getId(), buttonCallback);
                 }else if(nextChild instanceof EditText) {
                     getInstance().initInternal(context, nextChild.getId(), editTextCallback);
                 }else if(nextChild instanceof TextView) {
 					getInstance().initInternal(context, nextChild.getId(), textViewCallback);
 				}
-
+				}
 			}
 		}else{
 			String msg = "NativeUiPlugin: ContentView not found";
@@ -423,18 +594,20 @@ public class NativeUIPlugin extends CordovaPlugin {
 				}
 				initCallback = initCallbacksMap.get(nativeId);
 				
-				if (attributesMap.containsKey("innerBinding")) {
+				/*if (attributesMap.containsKey("innerBinding")) {
 					if (attributesMap.get("innerBinding").isEmpty()) {
 						continue;
 					}
-				}
+				}*/
 				
 				initCallbacksMap.remove(nativeId);
 				nativeId2ScopeMap.put(nativeId, scopeToUpdate);
 				if (initCallback != null) {
 					Message msg = new Message();
 					msg.obj = scopeToUpdate;
-					initCallback.init(0, scopeToUpdate);
+					int viewId = mapNativeId2ViewId.get(nativeId);	// new
+					initCallback.init(viewId, scopeToUpdate);		// new
+					//initCallback.init(0, scopeToUpdate);
 				}
 			}
 		}
@@ -489,6 +662,9 @@ public class NativeUIPlugin extends CordovaPlugin {
 					@Override
 					public boolean handleMessage(Message msg) {
 						if (msg.obj != null) {
+							String text = textView.getText().toString();
+							//String[] newValues = (String[]) msg.obj;
+							//String newValue = newValues[0]; 
 							textView.setText(msg.obj.toString());
 						} else {
 							textView.setText("");
@@ -548,6 +724,50 @@ public class NativeUIPlugin extends CordovaPlugin {
 		}
 	};
 	
+	private static InitCallback radioButtonCallback = new NativeUIPlugin.InitCallback() {
+        @Override
+        public void init(int viewId, Scope scope) {
+            final RadioButton radioButton = (RadioButton)contentView.findViewById(viewId);
+            if(radioButton != null){
+                bindRadioClick(radioButton);
+            }
+        }
+        ;
+    };
+    
+    private static InitCallback checkboxCallback = new NativeUIPlugin.InitCallback() {
+        @Override
+        public void init(int viewId, Scope scope) {
+            final CheckBox checkbox = (CheckBox)contentView.findViewById(viewId);
+            if(checkbox != null){
+                bindRadioClick(checkbox);
+            }
+        }
+        ;
+    };
+    
+    private static InitCallback toggleButtonCallback = new NativeUIPlugin.InitCallback() {
+        @Override
+        public void init(int viewId, Scope scope) {
+            final ToggleButton toggle = (ToggleButton)contentView.findViewById(viewId);
+            if(toggle != null){
+                bindRadioClick(toggle);
+            }
+        }
+        ;
+    };
+    
+    private static InitCallback switchButtonCallback = new NativeUIPlugin.InitCallback() {
+        @Override
+        public void init(int viewId, Scope scope) {
+            final Switch s = (Switch)contentView.findViewById(viewId);
+            if(s != null){
+                bindRadioClick(s);
+            }
+        }
+        ;
+    };
+	
 	private Scope getExistingScopeOrCreateNewOne(Integer id, JSONObject transportScopes) throws JSONException {
 		if (id == null) 
 			return null;
@@ -571,5 +791,29 @@ public class NativeUIPlugin extends CordovaPlugin {
 	
 	public interface InitCallback {
 		void init(int viewId, Scope scope);
+	}
+	
+	public boolean getSplashScreen() {
+		return splashScreen;
+	}
+	
+	public void setSplashScreen(boolean value) {
+		splashScreen = value;
+		
+		int splashStyleId = context.getResources().getIdentifier("SplashScreen", "style", context.getApplicationContext().getPackageName());
+		Dialog splashScreen = new Dialog(context, splashStyleId);
+		if (value) {
+			int splashLayoutId = context.getResources().getIdentifier("splashscreen", "layout", context.getApplicationContext().getPackageName());
+			splashScreen.setContentView(splashLayoutId);
+			int splashIconId = context.getResources().getIdentifier("splashScreenIcon", "id", context.getApplicationContext().getPackageName());
+			ImageView img = (ImageView) splashScreen.findViewById(splashIconId);
+			int iconId = context.getResources().getIdentifier("nxpsplash", "drawable", context.getApplicationContext().getPackageName());
+			img.setImageResource(iconId);	
+			splashScreen.show();
+		} else {
+			splashScreen.dismiss();
+			splashScreen = null;
+		}
+		
 	}
 }

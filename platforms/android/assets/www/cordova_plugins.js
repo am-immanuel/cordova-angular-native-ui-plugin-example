@@ -20,6 +20,13 @@ module.exports = [
         "clobbers": [
             "cordova.plugins.native-ui-plugin"
         ]
+    },
+    {
+        "file": "plugins/cordova-plugin-splashscreen/www/splashscreen.js",
+        "id": "cordova-plugin-splashscreen.SplashScreen",
+        "clobbers": [
+            "navigator.splashscreen"
+        ]
     }
 ];
 module.exports.metadata = 
@@ -28,7 +35,8 @@ module.exports.metadata =
     "com.ionic.keyboard": "1.0.3",
     "org.apache.cordova.console": "0.2.12",
     "org.apache.cordova.device": "0.2.13",
-    "de.apparentmedia.cordova.native_ui_plugin": "0.0.1"
+    "de.apparentmedia.cordova.native_ui_plugin": "0.0.1",
+    "cordova-plugin-splashscreen": "3.1.0"
 }
 // BOTTOM OF METADATA
 });

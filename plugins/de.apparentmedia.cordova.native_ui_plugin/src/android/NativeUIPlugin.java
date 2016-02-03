@@ -3,6 +3,8 @@ package de.apparentmedia.cordova;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaArgs;
@@ -30,6 +32,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -78,13 +82,21 @@ public class NativeUIPlugin extends CordovaPlugin {
 			JSONObject toParams = args.getJSONObject(1);
 			JSONObject fromState = args.getJSONObject(2);
 			JSONObject fromParams = args.getJSONObject(3);
-            JSONObject transportScopes = args.optJSONObject(4);
-           	updateJavaScopes(transportScopes);
+			
+			//JSONObject transportScopes = args.getJSONObject(4);
+			//updateJavaScopes(transportScopes);
+			
 			Log.i(TAG, toState.getString("name"));
 			if ("app.activity2".equals(toState.getString("name"))) {
-				context.startActivity(new Intent(context, Activity2.class));
+				Intent intentActivity2 = new Intent(context, Activity2.class);
+				//intentActivity2.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+				//intentActivity2.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+				context.startActivity(intentActivity2);
 			} else if ("app.activity1".equals(toState.getString("name"))) {
-				context.startActivity(new Intent(context, Activity1.class));
+				Intent intentActivity1 = new Intent(context, Activity1.class);
+				//intentActivity1.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+				//intentActivity1.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+				context.startActivity(intentActivity1);
 			}
 		} else if ("invokeCallback".equals(action)) {
 			int callbackId = args.getInt(0);
@@ -105,7 +117,6 @@ public class NativeUIPlugin extends CordovaPlugin {
 					}
 				});
 			}
-
 		} else {
 			Log.i(TAG, "action: " + action);
 			callbackContext.success();
@@ -117,11 +128,26 @@ public class NativeUIPlugin extends CordovaPlugin {
 		String nativeId = getNativeId(viewId);
 		Scope scope = getScopeByViewId(viewId);
 		String expression = getElementAttribute(nativeId, scope, "Bind", "Model");
+		
 		if (expression != null) {
-			invokePermanentCallback("$watch", scope.$id, expression, callback);
+			if (expression.matches("1#(.*)")) {
+				String[] multipleExpressions = expression.split("#");
+				expression = multipleExpressions[1];
+				TextView tv = (TextView)contentView.findViewById(viewId);
+				tv.setText(expression);
+			
+			} else if (expression.matches("2#(.*)")) {
+				String[] multipleExpressions = expression.split("#");
+				for (int i=0; i<multipleExpressions.length-1; i++) {
+					invokePermanentCallback("$watch", scope.$id, multipleExpressions[i], callback, expression);
+				}
+				
+			}  else {
+				invokePermanentCallback("$watch", scope.$id, expression, callback);
+			}
 		}
 	}
-
+	
     private void bindInternal(View view, String attribute, Callback callback) {
         String nativeId = getNativeId(view.getId());
         Scope scope = getScopeByViewId(view.getId());
@@ -132,7 +158,6 @@ public class NativeUIPlugin extends CordovaPlugin {
             callback.handleMessage(msg);
         }
     }
-
 
 	private void initInternal(Activity context, int viewId, InitCallback callback) {
 		if (this.context == null) {
@@ -179,6 +204,22 @@ public class NativeUIPlugin extends CordovaPlugin {
 		}
 	}
 	
+	// new
+	public static void radioClick(int viewId) {
+		getInstance().radioClickInternal(viewId);
+	}
+	
+	// new
+	private void radioClickInternal(int viewId) {
+		String nativeId = getNativeId(viewId);
+		Scope scope = getScopeByViewId(viewId);
+		String valueExpression = getElementAttribute(nativeId, scope, "value");
+		String modelExpression = getElementAttribute(nativeId, scope, "Model");
+		if ( (valueExpression != null) && (modelExpression != null) ) {
+			evaluateScopeExpressionByScopeId(scope.$id, modelExpression + "='" + valueExpression + "'");
+		}
+	}
+	
 	private String getElementAttribute(String nativeId, Scope scope, String ngPostfix) {
 		return getElementAttribute(nativeId, scope, ngPostfix, null);
 	}
@@ -193,6 +234,13 @@ public class NativeUIPlugin extends CordovaPlugin {
 			if (expression != null) {
 				return expression;
 			}
+			
+			// new
+			expression = scope.getElementAttribute(nativeId, "value");
+			if (expression != null) {
+				return expression;
+			}
+			
 			if (ngPostfix2 == null) {
 				return null;
 			}
@@ -204,6 +252,27 @@ public class NativeUIPlugin extends CordovaPlugin {
 			if (expression != null) {
 				return expression;
 			}
+			
+			expression = scope.getElementAttribute(nativeId, "innerBindingHTML");
+			if (expression != null) {
+				Pattern p = Pattern.compile("\\{\\{\\w+\\}\\}");
+				Matcher m = p.matcher(expression);
+				String bindExpression = "";
+				while(m.find()) {
+					bindExpression = bindExpression + m.group().replace("{", "").replace("}", "") + "#" ; 
+				}
+				
+				if (bindExpression != "") {
+					bindExpression = "2#" + bindExpression + expression;
+				} else {
+					bindExpression = "1#" + expression;
+				}
+				
+				return bindExpression;
+			}
+			
+			
+
 		}
 		return null;
 	}
@@ -212,11 +281,10 @@ public class NativeUIPlugin extends CordovaPlugin {
 		getInstance().clickInternal(viewId);
 	}
 	
-	public static void bind(View view, Callback callback) {
-		getInstance().bindInternal(view.getId(), callback);
-        bindClick(view);
+	public static void bind(int viewId, Callback callback) {
+		getInstance().bindInternal(viewId, callback);
 	}
-
+	
     public static void bindClick(final View view) {
         getInstance().bindInternal(view, "Click", new Callback() {
 			@Override
@@ -231,9 +299,23 @@ public class NativeUIPlugin extends CordovaPlugin {
 			}
 		});
     }
-
-
-
+    
+    // new
+    public static void bindRadioClick(final View view) {
+        getInstance().bindInternal(view, "Model", new Callback() {
+			@Override
+			public boolean handleMessage(Message msg) {
+				view.setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						radioClick(v.getId());
+					}
+				});
+				return false;
+			}
+		});
+    }
+    
     public static void bindImgSrc(View view, Callback callback) {
         getInstance().bindInternal(view, "Src", callback);
     }
@@ -241,13 +323,13 @@ public class NativeUIPlugin extends CordovaPlugin {
 	public static void init(Activity context, int viewId, InitCallback callback) {
 		getInstance().initInternal(context, viewId, callback);
 	}
-
+	
 	public static void init(Activity context, int layoutId){
 		context.setContentView(layoutId);
 		contentView = context.findViewById(android.R.id.content);
 		init(context, contentView);
 	}
-
+	
 	private static void init(Activity context, View view) {
 		if(view != null){
 			int childrenCount = ((ViewGroup)view).getChildCount();
@@ -259,21 +341,26 @@ public class NativeUIPlugin extends CordovaPlugin {
 					init(context, nextChild);
 				}else if(nextChild instanceof ImageView) {
                     getInstance().initInternal(context, nextChild.getId(), imageViewCallback);
-                }else if(nextChild instanceof Button) {
+                }else if(nextChild instanceof RadioButton) {
+					//int childrenRadioButton = ((RadioGroup)view).getChildCount();
+					//for (int j=0; j<=childrenRadioButton; j++) {
+					//	View currentRadioButton = ((RadioGroup)view).getChildAt(j);
+						getInstance().initInternal(context, nextChild.getId(), radioButtonCallback);
+					//}
+				}else if(nextChild instanceof Button) {
                     getInstance().initInternal(context, nextChild.getId(), buttonCallback);
                 }else if(nextChild instanceof EditText) {
                     getInstance().initInternal(context, nextChild.getId(), editTextCallback);
                 }else if(nextChild instanceof TextView) {
 					getInstance().initInternal(context, nextChild.getId(), textViewCallback);
 				}
-
 			}
 		}else{
 			String msg = "NativeUiPlugin: ContentView not found";
 			Log.e(TAG, msg);
 		}
 	}
-
+	
 	public static void set(int viewId, Object value) {
 		getInstance().setInternal(viewId, value);
 	}
@@ -286,8 +373,6 @@ public class NativeUIPlugin extends CordovaPlugin {
 			evaluateScopeExpressionByScopeId(scope.$id, modelExpression + "='" + value.toString().replaceAll("'", "\\'") + "'");
 		}
 	}
-
-
 
 	public void evaluateScopeExpression(int viewId, String expression) {
 		Scope scope = getScopeByViewId(viewId);
@@ -348,9 +433,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 	public static void backButtonPressed() {
 		getInstance().invokePermanentCallback("nativeBackButtonPressed");
 	}
-
-
-
+	
 	protected void invokeScopeMethod(int scopeId, String method,
 			Object... args) {
 		invokePermanentCallback("invokeMethod", method, args);
@@ -396,6 +479,13 @@ public class NativeUIPlugin extends CordovaPlugin {
 					attributesMap.put(name, attributesJsonObject.getString(name));
 				}
 				initCallback = initCallbacksMap.get(nativeId);
+				
+				/*if (attributesMap.containsKey("innerBinding")) {
+					if (attributesMap.get("innerBinding").isEmpty()) {
+						continue;
+					}
+				}*/
+				
 				initCallbacksMap.remove(nativeId);
 				nativeId2ScopeMap.put(nativeId, scopeToUpdate);
 				if (initCallback != null) {
@@ -407,7 +497,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 		}
 		return scopeToUpdate;
 	}
-
+	
     private static InitCallback imageViewCallback = new NativeUIPlugin.InitCallback() {
         @Override
         public void init(int viewId, Scope scope) {
@@ -432,10 +522,9 @@ public class NativeUIPlugin extends CordovaPlugin {
                 });
             }
         }
-
         ;
     };
-
+    
 	private static InitCallback buttonCallback = new NativeUIPlugin.InitCallback() {
         @Override
         public void init(int viewId, Scope scope) {
@@ -444,16 +533,15 @@ public class NativeUIPlugin extends CordovaPlugin {
                 bindClick(button);
             }
         }
-
         ;
     };
-
+    
 	private static InitCallback textViewCallback = new NativeUIPlugin.InitCallback() {
 		@Override
 		public void init(int viewId, Scope scope) {
 			final TextView textView = (TextView)contentView.findViewById(viewId);
 			if(textView != null){
-				bind(textView, new Handler.Callback() {
+				bind(textView.getId(), new Handler.Callback() {
 
 					@Override
 					public boolean handleMessage(Message msg) {
@@ -467,10 +555,9 @@ public class NativeUIPlugin extends CordovaPlugin {
 				});
 			}
 		}
-
 		;
 	};
-
+	
 	private static InitCallback editTextCallback = new InitCallback() {
 		protected String lastUpdateCausedByMe;
 		protected String lastUpdateReceived;
@@ -478,7 +565,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 		public void init(int viewId, Scope scope) {
 			final EditText editText = (EditText)contentView.findViewById(viewId);
 			if(editText != null){
-				bind(editText, new Handler.Callback() {
+				bind(editText.getId(), new Handler.Callback() {
 
 					@Override
 					public boolean handleMessage(Message msg) {
@@ -505,8 +592,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 					}
 
 					@Override
-					public void beforeTextChanged(CharSequence s, int start, int count,
-												  int after) {
+					public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
 					}
 
@@ -516,9 +602,19 @@ public class NativeUIPlugin extends CordovaPlugin {
 					}
 				});
 			}
-
 		}
 	};
+	
+	private static InitCallback radioButtonCallback = new NativeUIPlugin.InitCallback() {
+        @Override
+        public void init(int viewId, Scope scope) {
+            final RadioButton radioButton = (RadioButton)contentView.findViewById(viewId);
+            if(radioButton != null){
+                bindRadioClick(radioButton);
+            }
+        }
+        ;
+    };
 	
 	private Scope getExistingScopeOrCreateNewOne(Integer id, JSONObject transportScopes) throws JSONException {
 		if (id == null) 
