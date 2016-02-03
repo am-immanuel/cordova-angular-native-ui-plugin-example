@@ -37,6 +37,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -246,29 +247,10 @@ public class NativeUIPlugin extends CordovaPlugin {
 			
 			// new
 			Boolean checked = null;
-			if (view.getClass().getName().equals("android.widget.CheckBox")) {
-				checked = ((CheckBox) view).isChecked();
-			} else if (view.getClass().getName().equals("android.widget.ToggleButton")) {
-				checked = ((ToggleButton) view).isChecked();
-			} else if (view.getClass().getName().equals("android.widget.Switch")) {
-				checked = ((Switch) view).isChecked();
+			if (view instanceof CompoundButton) {
+				checked = ((CompoundButton) view).isChecked();
 			}
 			
-			
-			/*try {
-				checked = ((CheckBox) view).isChecked();
-			} catch (Exception e) {
-				try {
-					checked = ((ToggleButton) view).isChecked();
-				} catch (Exception ex) {
-					try {
-						checked = ((Switch) view).isChecked();
-					} catch (Exception exc) {
-						checked = false;
-					}
-				}
-			}*/
-		
 			String modelExpression = getElementAttribute(nativeId, scope, "Model");
 			String valueExpression = getElementAttribute(nativeId, scope, "value");		// new
 			String trueExpression = getElementAttribute(nativeId, scope, "TrueValue");
