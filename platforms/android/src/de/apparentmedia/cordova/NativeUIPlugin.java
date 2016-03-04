@@ -378,7 +378,6 @@ public class NativeUIPlugin extends CordovaPlugin {
     }
     
     // new
-    // TODO: instanceof --> getClass()
     public static void bindRadioClick(final View view) {
         getInstance().bindInternal(view, "Model", new Callback() {
 			@Override
@@ -424,7 +423,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 			Log.i(TAG, msg);
 			for(int i=0; i< childrenCount; ++i) {
 				View nextChild = ((ViewGroup)view).getChildAt(i);
-				if(nextChild instanceof LinearLayout || nextChild instanceof RelativeLayout){
+				if(nextChild instanceof ViewGroup){
 					init(context, nextChild);
 				}else { 
 					//new

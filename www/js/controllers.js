@@ -56,7 +56,7 @@ angular.module('starter.controllers', [])
         $scope.updateTextField = function() {
             $scope.output = $scope.input.text;
             $scope.name1 = "Trinity";
-        }
+        };
         $scope.gotoActivity2 = function() {
             $state.go('app.activity2');
         };
