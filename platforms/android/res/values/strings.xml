@@ -8,4 +8,6 @@
     <string name="action_settings">Settings</string>
     <string name="title_activity_main">MainActivity</string>
     <string name="launch_activity">Activity1</string>
+    <string name="app.activity1">com.ionicframework.ionicapp395632.Activity1</string>
+    <string name="app.activity2">com.ionicframework.ionicapp395632.Activity2</string>
 </resources>

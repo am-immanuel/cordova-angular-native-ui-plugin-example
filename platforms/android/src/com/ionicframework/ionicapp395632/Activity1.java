@@ -8,11 +8,28 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 
+/**
+ * Represent an Android activity which extends the BaseActivity class.
+ * 
+ * @author: Julius Höfler, Immanuel Scheerer
+ * */
 public class Activity1 extends BaseActivity {
+	
+	/**
+	 * Generates the activity by starting native activity.
+	 * Invokes a NativeUIPlugin function which initialize the
+	 * UI elements of this activity.
+	 * 
+	 * @param savedInstanceState Contains the activity's data.
+	 * */
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
+		// calls the NativeUIPlugin function with the activity's context
+		// and the desired layout
 		init(this, R.layout.activity1);
+		
 		//getInstance().setSplashScreen(true);
 		//activateSplashScreen(getInstance().getSplashScreen());
 	}

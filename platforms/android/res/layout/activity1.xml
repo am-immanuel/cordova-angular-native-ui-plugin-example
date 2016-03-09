@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- android layout definition for activity 1 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical" >
 
+    <!-- matching html input with native-id='editText1' -->
     <EditText
         android:id="@+id/editText1"
         android:layout_width="match_parent"
@@ -14,23 +16,21 @@
         <requestFocus />
     </EditText>
 
+    <!-- matching html label (span) with native-id='textView1' -->
     <TextView
         android:id="@+id/textView1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="" />
 
-    <!--<ImageView
-        android:id="@+id/imageView1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />-->
-
+    <!-- matching html button with native-id='button1' -->
     <Button
         android:id="@+id/button1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Update data" />
 
+    <!-- matching html button with native-id='gotoActivity2Button' -->
     <Button
         android:id="@+id/gotoActivity2Button"
         android:layout_width="match_parent"
@@ -38,21 +38,26 @@
         android:text="Go to activity 2"/>
         <!--android:onClick="gotoActivity2"  />-->
 
+    <!-- matching html img with native-id='imageView1' -->
     <!--<ImageView
             android:id="@+id/imageView1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />-->
 
+    <!-- matching html label (span) with native-id='radioGender' -->
     <TextView
             android:id="@+id/radioGender"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="" />
 
+    <!-- defines a radio group and contains radiobuttons -->
     <RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
+
+        <!-- matching html input type='radio' with native-id='radioGenderMale' -->
         <RadioButton
                 android:id="@+id/radioGenderMale"
                 android:layout_width="wrap_content"
@@ -60,6 +65,7 @@
                 android:text="Male"/>
         <!--android:onClick="clickGender"-->
 
+        <!-- matching html input type='radio' with native-id='radioGenderFemale' -->
         <RadioButton
                 android:id="@+id/radioGenderFemale"
                 android:layout_width="wrap_content"
@@ -68,24 +74,28 @@
         <!--android:onClick="clickGender"/>-->
     </RadioGroup>
 
+    <!-- matching html label (span) with native-id='outputGender' -->
     <TextView
             android:id="@+id/outputGender"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="" />
 
+    <!-- matching html label (span) with native-id='outputTest' -->
     <TextView
             android:id="@+id/outputTest"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="" />
 
+    <!-- matching html label (span) with native-id='outputCheckbox' -->
     <TextView
             android:id="@+id/outputCheckbox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="" />
 
+    <!-- matching html input type='checkbox' with native-id='check1' -->
     <CheckBox
             android:id="@+id/check1"
             android:layout_width="match_parent"
@@ -93,6 +103,7 @@
             android:text="Milk"
             />
 
+    <!-- matching html input type='checkbox' with native-id='check2' -->
     <CheckBox
             android:id="@+id/check2"
             android:layout_width="match_parent"
@@ -100,6 +111,7 @@
             android:text="Cheese"
             />
 
+    <!-- matching html input type='checkbox' with native-id='check3' -->
     <CheckBox
             android:id="@+id/check3"
             android:layout_width="match_parent"
@@ -107,6 +119,7 @@
             android:text="Bread"
             />
 
+    <!-- matching html input type='checkbox' with native-id='check4' -->
     <CheckBox
             android:id="@+id/check4"
             android:layout_width="match_parent"
@@ -114,12 +127,14 @@
             android:text="Eggs"
             />
 
+    <!-- matching html label (span) with native-id='outputList' -->
     <TextView
             android:id="@+id/outputList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="" />
 
+    <!-- matching ionic ion-checkbox with native-id='toggleLight' -->
     <ToggleButton
             android:id="@+id/toggleLight"
             android:layout_width="match_parent"
@@ -129,12 +144,14 @@
             android:checked="true"
             />
 
+    <!-- matching html label (span) with native-id='outputToggle' -->
     <TextView
             android:id="@+id/outputToggle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="" />
 
+    <!-- matching ionic ion-toggle with native-id='switchWlan' -->
     <Switch
             android:id="@+id/switchWlan"
             android:layout_width="match_parent"
@@ -142,6 +159,7 @@
             android:text="WLAN Switch"
             />
 
+    <!-- matching html label (span) with native-id='outputSwitch' -->
     <TextView
             android:id="@+id/outputSwitch"
             android:layout_width="match_parent"
