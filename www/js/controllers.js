@@ -105,23 +105,7 @@ angular.module('starter.controllers', [])
 
         // define default values for bound variables
         $scope.backgroundColor = "white";
-        $scope.wlanSwitch = "ON";
-
-        /*
-        $scope.textArray = ["Hallo", "Hello", "Hola", "Servus", "Ciao"];
-        $scope.myText = $scope.textArray[0];
-        $scope.counter = 1;
-        $scope.switchText = function() {
-            if ($scope.counter < $scope.textArray.length) {
-                $scope.myText = $scope.textArray[$scope.counter];
-                $scope.counter ++;
-
-            } else {
-                $scope.counter = 0;
-                $scope.myText = $scope.textArray[$scope.counter];
-            }
-        };*/
-
+        $scope.wlanSwitch = "OFF";
     })
     // controller for the template activity2.html
     .controller('Activity2Ctrl', function($scope, $stateParams, $state  ) {

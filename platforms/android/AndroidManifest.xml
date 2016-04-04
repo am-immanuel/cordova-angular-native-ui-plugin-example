@@ -9,7 +9,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:label="Activity 1" android:name="Activity1">
+        <activity android:label="Activity 1" android:name="Activity1" android:windowSoftInputMode="stateHidden">
         </activity>
         <activity android:label="Activity 2" android:name="Activity2">
         </activity>

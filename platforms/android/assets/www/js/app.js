@@ -19,7 +19,7 @@ angular.module('starter', ['ionic', 'starter.controllers']).run(function($ionicP
 })
 
 // app configuration
-.config(function($stateProvider, $urlRouterProvider, $compileProvider) {
+.config(function($stateProvider, $urlRouterProvider, $compileProvider, $ionicConfigProvider) {
   // configures the state navigation (routing)
   $stateProvider
 
@@ -113,4 +113,7 @@ angular.module('starter', ['ionic', 'starter.controllers']).run(function($ionicP
   ;
   // if none of the above states are matched, use this as the fallback
   $urlRouterProvider.otherwise('/app/activity1');
+
+  // enable forward caching
+  $ionicConfigProvider.views.forwardCache(true);
 });
