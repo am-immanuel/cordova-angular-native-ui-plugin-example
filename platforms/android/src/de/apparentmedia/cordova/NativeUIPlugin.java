@@ -1,7 +1,5 @@
 package de.apparentmedia.cordova;
 
-import static de.apparentmedia.cordova.NativeUIPlugin.getInstance;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -15,17 +13,14 @@ import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.PluginResult;
 import org.apache.cordova.PluginResult.Status;
-import org.apache.cordova.splashscreen.SplashScreen;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.R;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Handler.Callback;
@@ -41,16 +36,10 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RadioButton;
-import android.widget.RadioGroup;
-import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.ToggleButton;
-
-import com.ionicframework.ionicapp395632.Activity1;
-import com.ionicframework.ionicapp395632.Activity2;
 
 /**
  * This class represents an Android plugin and extends the CordovaPlugin class.
@@ -79,6 +68,14 @@ public class NativeUIPlugin extends CordovaPlugin {
 	
 	private static int splashScreen = 1;
 	private static Dialog splashScreenDialog = null; 
+	
+	/* test
+	private static boolean tStart = true;
+	public static long tStartTime = 0;
+	private static int count = 1;
+	public long getStartTime() {
+		return tStartTime;
+	}*/
 	
 	/**
 	 * This constructor initialize the root scope with the plugin instance.
@@ -178,8 +175,6 @@ public class NativeUIPlugin extends CordovaPlugin {
 		} else if ("invokeCallback".equals(action)) {
 			int callbackId = args.getInt(0);							// get callback ID
 			final Object obj = args.get(1);								// get new value
-			//final Object obj2 = args.get(2);		// new
-			//final Object obj3 = args.get(3);		// new
 			final Callback callback = callbackMap.get(callbackId);		// get callback instance from callback ID
 			if (callback == null) {
 				Log.e(TAG, "Could not find callback with ID " + callbackId);
@@ -196,8 +191,6 @@ public class NativeUIPlugin extends CordovaPlugin {
 						
 						// if the received new value is not empty, put it into message
 						if (obj != JSONObject.NULL) {			
-							//Object[] msgList= {obj, obj2, obj3};	// new
-							//m.obj = msgList;
 							m.obj = obj;
 						}
 						// send message over the UI callback to the corresponding element
@@ -515,7 +508,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 				expression = scope.getElementAttribute(nativeId, "ngBindTemplate");
 			}
 			
-			// seperate the '{{*}}' values from the expression
+			// separate the '{{*}}' values from the expression
 			if (expression != null) {
 				Pattern p = Pattern.compile("\\{\\{\\w+\\}\\}");
 				Matcher m = p.matcher(expression);
@@ -561,8 +554,8 @@ public class NativeUIPlugin extends CordovaPlugin {
 	 * Pass view through to internal private function.
 	 * @param view View instance from a UI element.
 	 * */
-    public static void bindClick(final View view) {
-        getInstance().bindInternal(view, "Click", new Callback() {
+    public static void bindClick(final View view, String attribute) {
+        getInstance().bindInternal(view, attribute, new Callback() {
         	
         	/**
         	 * Receive messages and set click listener.
@@ -579,6 +572,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 					@Override
 					public void onClick(View v) {
 						//click(v.getId());
+						//tStartTime = System.currentTimeMillis();
 						checkClick(v);
 					}
 				});
@@ -591,8 +585,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 	 * Pass view through to internal private function.
 	 * @param view View instance from a UI element.
 	 * */
-    // TODO: merge bindClick and bindRadioClick
-    // new
+    @Deprecated
     public static void bindRadioClick(final View view) {
         getInstance().bindInternal(view, "Model", new Callback() {
         	
@@ -610,6 +603,9 @@ public class NativeUIPlugin extends CordovaPlugin {
 					 * */
 					@Override
 					public void onClick(View v) {
+						
+						//tStartTime = System.currentTimeMillis();
+						
 						checkClick(v);		// new
 						/*if (v instanceof Switch) {
 							checkClick(v);
@@ -928,9 +924,10 @@ public class NativeUIPlugin extends CordovaPlugin {
 				// get current native ID
 				String nativeId = nativeIds.getString(i);
 				
-				// TODO: check clear()
 				// create a attribute map which contains all attribute informations from the element with this native ID 
 				Map<String, String> attributesMap = scopeToUpdate.getElementAttributes(nativeId);
+				
+				// clear it to prevent double attributes
 				attributesMap.clear();
 				
 				// get the object contains all informations from the element with this native ID 
@@ -1035,7 +1032,7 @@ public class NativeUIPlugin extends CordovaPlugin {
             
             // start binding process
             if(button != null){
-                bindClick(button);
+                bindClick(button, "Click");
             }
         }
         ;
@@ -1067,12 +1064,12 @@ public class NativeUIPlugin extends CordovaPlugin {
 					public boolean handleMessage(Message msg) {
 						if (msg.obj != null) {
 							// get old text from TextView
-							String text = textView.getText().toString();
-							//String[] newValues = (String[]) msg.obj;
-							//String newValue = newValues[0]; 
+							//String text = textView.getText().toString();
 							
 							// update TextView with text from received message
 							textView.setText(msg.obj.toString());
+							
+							//System.out.println("Time Label: " + (System.currentTimeMillis() - tStartTime));
 							
 						// if message is null set TextView text to empty	
 						} else {
@@ -1081,6 +1078,22 @@ public class NativeUIPlugin extends CordovaPlugin {
 						return false;
 					}
 				});
+				/*textView.addTextChangedListener(new TextWatcher() {
+					@Override
+					public void onTextChanged(CharSequence s, int start, int before, int count) {
+						
+					}
+					
+					@Override
+					public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+			
+					}
+					
+					@Override
+					public void afterTextChanged(Editable s) {
+						System.out.println("Label: " + (System.currentTimeMillis() - tStartTime));
+					}
+				});*/
 			}
 		}
 		;
@@ -1157,7 +1170,7 @@ public class NativeUIPlugin extends CordovaPlugin {
 					 * */
 					@Override
 					public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-					
+						//tStartTime = System.currentTimeMillis();
 					}
 
 					/**
@@ -1188,7 +1201,7 @@ public class NativeUIPlugin extends CordovaPlugin {
             
             // start binding process
             if(radioButton != null){
-                bindRadioClick(radioButton);
+                bindClick(radioButton, "Model");
             }
         }
         ;
@@ -1209,7 +1222,7 @@ public class NativeUIPlugin extends CordovaPlugin {
             
             // start binding process
             if(checkbox != null){
-                bindRadioClick(checkbox);
+                bindClick(checkbox, "Model");
             }
         }
         ;
@@ -1230,7 +1243,7 @@ public class NativeUIPlugin extends CordovaPlugin {
             
             // start binding process
             if(toggle != null){
-                bindRadioClick(toggle);
+                bindClick(toggle, "Model");
             }
         }
         ;
@@ -1251,7 +1264,7 @@ public class NativeUIPlugin extends CordovaPlugin {
             
             // start binding process
             if(s != null){
-                bindRadioClick(s);
+                bindClick(s, "Model");
             }
         }
         ;

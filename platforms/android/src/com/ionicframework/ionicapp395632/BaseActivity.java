@@ -1,7 +1,6 @@
 package com.ionicframework.ionicapp395632;
 
 import android.app.Activity;
-import android.os.Bundle;
 
 import static de.apparentmedia.cordova.NativeUIPlugin.*;
 

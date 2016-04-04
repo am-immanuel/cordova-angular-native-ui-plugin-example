@@ -172,7 +172,7 @@ function addScopeAndChildScopesToScopeMap($scope, angularScopeMap, transportScop
 /**
  * Build the current TransportScopeMap and return the result
  * @param: $scope - Current Angular scope object
- * @return: TransportScopeMap which represents the current build ScopeMap
+ * @return: {Object} TransportScopeMap which represents the current build ScopeMap
  * */
 function getTransportScopeMap($scope) {
     var newTransportScopeMap = {};

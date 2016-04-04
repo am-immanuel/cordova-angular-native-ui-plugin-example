@@ -33,6 +33,7 @@ import android.view.View;
  * */
 public class CordovaApp extends CordovaActivity {
 	public static CordovaWebView webView;
+	//public static long tStartTime = System.currentTimeMillis();
 	
 	/**
 	 * Generates the application by starting the embedded webview and

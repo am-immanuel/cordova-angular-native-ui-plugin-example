@@ -1,12 +1,7 @@
 package com.ionicframework.ionicapp395632;
 
 import static de.apparentmedia.cordova.NativeUIPlugin.*;
-import de.apparentmedia.cordova.NativeUIPlugin;
-import android.app.Dialog;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.ImageView;
-import android.widget.ProgressBar;
 
 /**
  * Represent an Android activity which extends the BaseActivity class.
@@ -34,7 +29,7 @@ public class Activity1 extends BaseActivity {
 		//activateSplashScreen(getInstance().getSplashScreen());
 	}
 	
-	public void activateSplashScreen(boolean value) {
+	/*public void activateSplashScreen(boolean value) {
 		Dialog splashScreen = new Dialog(this, R.style.SplashScreen);
 		if (value) {
 			splashScreen.setContentView(R.layout.splashscreen);
@@ -45,6 +40,13 @@ public class Activity1 extends BaseActivity {
 			splashScreen.dismiss();
 			splashScreen = null;
 		}
+	}*/
+	
+	@Override
+	protected void onResume() {
+		super.onResume();
+		//System.out.println("HmP: " + (System.currentTimeMillis() - CordovaApp.tStartTime));
+		//System.out.println("HmP: " + (System.currentTimeMillis() - getInstance().getStartTime()));
 	}
 
 }
